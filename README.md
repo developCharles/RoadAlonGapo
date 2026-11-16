@@ -52,35 +52,44 @@ Leave `.env` empty to preview the demo portals.
      ```
 7. Restart `npm run dev`.
 
-## 3. Deploy to Vercel
+## 3. Deploy to Netlify
+
+`netlify.toml` is already configured:
+
+- Build command: `npm run build`
+- Publish directory: `dist`
+- SPA redirect: all routes → `index.html`
 
 ### Option A — Dashboard (recommended)
 
-1. Push this folder to a GitHub repository.
-2. In Vercel: **Add New → Project → Import** the repo.
-3. Framework preset: **Vite**. Build command `npm run build`, output `dist` (Vercel detects this).
-4. Add Environment Variables (Production + Preview):
+1. Push this folder to GitHub (already done if you followed step 1).
+2. In Netlify: **Add new site → Import an existing project → GitHub**.
+3. Pick the `RoadAlonGapo` repository.
+4. Confirm the build settings (they come from `netlify.toml`):
+   - Build command: `npm run build`
+   - Publish directory: `dist`
+5. Add Environment Variables (all scopes):
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-5. Deploy, then add the production URL to Supabase **Site URL / Redirect URLs**.
-
-`vercel.json` already rewrites all routes to `index.html` so React Router works on refresh.
+6. Click **Deploy site**.
+7. Copy the site URL (e.g. `https://roadalongapo.netlify.app`) and add it to
+   Supabase **Authentication → URL Configuration**:
+   - Site URL: the Netlify URL
+   - Redirect URLs: `https://YOUR-SITE.netlify.app/**`
 
 ### Option B — CLI
 
 ```bash
-npm i -g vercel
-vercel login
-vercel            # preview deployment
-vercel --prod     # production
+npx netlify-cli login
+npx netlify-cli init          # link this folder to a site
+npx netlify-cli env:import .env
+npx netlify-cli deploy --prod
 ```
-
-Add the env vars in **Vercel → Project → Settings → Environment Variables**, then redeploy.
 
 ## 4. Domain / HTTPS
 
-Vercel gives you `https://<project>.vercel.app` automatically. Add a custom domain under
-**Project → Settings → Domains**, then update Supabase Auth URLs to the custom domain.
+Netlify gives you `https://<site>.netlify.app` automatically. Add a custom domain under
+**Site configuration → Domain management**, then update the Supabase Auth URLs to the custom domain.
 
 ## Notes
 
