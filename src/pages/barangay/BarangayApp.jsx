@@ -43,7 +43,7 @@ export default function BarangayApp() {
   }
 
   const act = async (patch, message) => {
-    if (!detail || busy) return
+    if (!detail || busy || !canAct) return
     setBusy(true)
     try {
       await updateReport(detail.id, patch)
@@ -70,9 +70,16 @@ export default function BarangayApp() {
     )
 
   const escalate = async () => {
-    if (!detail || busy) return
+    if (!detail || busy || !canAct) return
     setBusy(true)
     try {
+      if (detail.status === 'Pending') {
+        await updateReport(detail.id, {
+          status: 'Verified',
+          verifiedAt: new Date().toISOString(),
+          barangayRemarks: remarks
+        })
+      }
       await insertMessage({
         barangay: profile.barangay,
         senderId: profile.id,
@@ -82,6 +89,8 @@ export default function BarangayApp() {
         readByEngineer: false,
         readByBarangay: true
       })
+      await load()
+      setDetail(null)
       toast('Escalated to City Engineering.', 'success')
     } catch (e) {
       toast(e.message || 'Could not escalate.', 'error')
@@ -97,10 +106,25 @@ export default function BarangayApp() {
     { key: 'profile', label: 'Profile', icon: 'fas fa-user', active: tab === 'profile', onClick: () => setTab('profile') }
   ]
 
-  const pendingCount = useMemo(() => reports.filter((r) => r.status === 'Pending').length, [reports])
+  const myReports = useMemo(
+    () => reports.filter((r) => profile?.barangay && r.barangay === profile.barangay),
+    [reports, profile?.barangay]
+  )
+
+  const pendingCount = useMemo(
+    () => myReports.filter((r) => r.status === 'Pending').length,
+    [myReports]
+  )
+
+  const canAct = Boolean(
+    detail &&
+      profile?.barangay &&
+      detail.barangay === profile.barangay &&
+      detail.status === 'Pending'
+  )
 
   const sidebarItems = [
-    { icon: 'fas fa-clipboard-check', label: 'Verification Desk', sub: `${pendingCount} awaiting review`, onClick: () => setTab('desk'), badge: pendingCount || null },
+    { icon: 'fas fa-clipboard-check', label: 'Verification Desk', sub: `${pendingCount} awaiting review in ${profile?.barangay || 'your barangay'}`, onClick: () => setTab('desk'), badge: pendingCount || null },
     { icon: 'fas fa-comments', label: 'Escalation Log', sub: 'Messages to City Engineering', onClick: () => setTab('messages'), dividerAfter: true },
     { icon: 'fas fa-book', label: 'Verification Guidelines', sub: 'Protocols & procedures', onClick: () => toast('Guidelines coming soon.') },
     { icon: 'fas fa-question-circle', label: 'Help & Support', sub: 'FAQ and contact info', onClick: () => toast('Support center coming soon.') }
@@ -114,43 +138,60 @@ export default function BarangayApp() {
       sidebarItems={sidebarItems}
     >
       {tab === 'map' && <BarangayMap reports={reports} loading={loading} onOpenReport={openDetail} />}
-      {tab === 'desk' && <DeskView reports={reports} onOpenReport={openDetail} />}
+      {tab === 'desk' && <DeskView reports={myReports} onOpenReport={openDetail} />}
       {tab === 'messages' && <MessagesView role="barangay" />}
       {tab === 'profile' && <BarangayProfile reports={reports} />}
 
-      <BottomSheet open={Boolean(detail)} onClose={() => setDetail(null)} title="Verify Report">
+      <BottomSheet
+        open={Boolean(detail)}
+        onClose={() => setDetail(null)}
+        title={canAct ? 'Verify Report' : 'Report Details'}
+      >
         {detail && (
           <ReportDetail
             report={reports.find((r) => r.id === detail.id) || detail}
             footer={
-              <>
-                <button className="btn-danger flex-1" onClick={reject} disabled={busy}>
-                  <i className="fas fa-times" /> Reject
-                </button>
-                <button className="btn-success flex-1" onClick={verify} disabled={busy}>
-                  <i className="fas fa-check" /> Verify
-                </button>
-              </>
+              canAct ? (
+                <>
+                  <button className="btn-danger flex-1" onClick={reject} disabled={busy}>
+                    <i className="fas fa-times" /> Reject
+                  </button>
+                  <button className="btn-success flex-1" onClick={verify} disabled={busy}>
+                    <i className="fas fa-check" /> Verify
+                  </button>
+                </>
+              ) : null
             }
           >
-            <div className="mb-4 mt-1">
-              <div className="mb-2 flex items-center justify-between">
-                <label className="text-[0.7rem] font-extrabold uppercase tracking-wide text-gray-400">
-                  Remarks
-                </label>
-                <span className="text-[0.68rem] font-semibold text-gray-300">Optional</span>
+            {canAct ? (
+              <>
+                <div className="mb-4 mt-1">
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="text-[0.7rem] font-extrabold uppercase tracking-wide text-gray-400">
+                      Remarks
+                    </label>
+                    <span className="text-[0.68rem] font-semibold text-gray-300">Optional</span>
+                  </div>
+                  <textarea
+                    className="input-field resize-none bg-gray-50 focus:bg-white"
+                    rows={3}
+                    placeholder="Add context for the City Engineering office…"
+                    value={remarks}
+                    onChange={(e) => setRemarks(e.target.value)}
+                  />
+                </div>
+                <button className="btn-outline mb-2 w-full" onClick={escalate} disabled={busy}>
+                  <i className="fas fa-paper-plane" /> Escalate to City Engineering
+                </button>
+              </>
+            ) : (
+              <div className="mt-2 rounded-[10px] border border-line bg-gray-50 px-3.5 py-3 text-[0.75rem] font-semibold leading-relaxed text-muted">
+                <i className="fas fa-lock mr-1 text-gray-400" />
+                {detail.barangay !== profile?.barangay
+                  ? `This report belongs to ${detail.barangay || 'another barangay'} and can only be reviewed by that barangay's officials.`
+                  : `This report is already ${detail.status.toLowerCase()} and can no longer be verified or rejected.`}
               </div>
-              <textarea
-                className="input-field resize-none bg-gray-50 focus:bg-white"
-                rows={3}
-                placeholder="Add context for the City Engineering office…"
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-              />
-            </div>
-            <button className="btn-outline mb-2 w-full" onClick={escalate} disabled={busy}>
-              <i className="fas fa-paper-plane" /> Escalate to City Engineering
-            </button>
+            )}
           </ReportDetail>
         )}
       </BottomSheet>

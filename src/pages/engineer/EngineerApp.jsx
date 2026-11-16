@@ -43,6 +43,16 @@ export default function EngineerApp() {
 
   const saveProgress = async (nextStage) => {
     if (!detail || busy) return
+    if (!['Verified', 'In Progress'].includes(detail.status)) {
+      toast('Only verified or in-progress reports can be updated.', 'error')
+      return
+    }
+    const currentStage = getStageIndex(detail)
+    const nextStageIndex = STAGES.findIndex((s) => s.key === (nextStage ?? detail.repairStage))
+    if (nextStage !== 'resolved' && nextStageIndex >= 0 && nextStageIndex <= currentStage) {
+      toast('That repair stage is already complete.', 'info')
+      return
+    }
     setBusy(true)
     try {
       const payload = {
@@ -54,7 +64,7 @@ export default function EngineerApp() {
         payload.status = 'Resolved'
         payload.resolvedAt = new Date().toISOString()
         payload.repairStage = 'resolved'
-      } else if (detail.status !== 'In Progress' && detail.status !== 'Resolved') {
+      } else if (detail.status !== 'In Progress') {
         payload.status = 'In Progress'
       }
       await updateReport(detail.id, payload)
@@ -80,6 +90,10 @@ export default function EngineerApp() {
     { icon: 'fas fa-comments', label: 'Messages', sub: 'Chat with barangays', onClick: () => setTab('messages') }
   ]
 
+  const currentStage = detail ? getStageIndex(detail) : -1
+  const canEdit = Boolean(detail && ['Verified', 'In Progress'].includes(detail.status))
+  const availableStages = STAGES.filter((s, i) => s.key !== 'resolved' && i > currentStage)
+
   return (
     <AppShell
       roleLabel="City Engineer"
@@ -90,32 +104,47 @@ export default function EngineerApp() {
       {tab === 'dashboard' && <EngineerDashboard reports={reports} onOpen={openDetail} />}
       {tab === 'messages' && <MessagesView role="engineer" />}
 
-      <BottomSheet open={Boolean(detail)} onClose={() => setDetail(null)} title="Repair Task">
+      <BottomSheet
+        open={Boolean(detail)}
+        onClose={() => setDetail(null)}
+        title={canEdit ? 'Repair Task' : 'Report Details'}
+      >
         {detail && (
           <ReportDetail
             report={reports.find((r) => r.id === detail.id) || detail}
             footer={null}
           >
-            <div className="mb-4 space-y-3">
-              <div>
-                <label className="input-label">Assigned Team</label>
-                <input className="input-field" value={team} onChange={(e) => setTeam(e.target.value)} placeholder="e.g. Crew Alpha" />
+            {canEdit ? (
+              <div className="mb-4 space-y-3">
+                <div>
+                  <label className="input-label">Assigned Team</label>
+                  <input className="input-field" value={team} onChange={(e) => setTeam(e.target.value)} placeholder="e.g. Crew Alpha" />
+                </div>
+                <div>
+                  <label className="input-label">Work Notes</label>
+                  <textarea className="input-field resize-none" rows={3} value={workDescription} onChange={(e) => setWorkDescription(e.target.value)} placeholder="Describe work done…" />
+                </div>
+                {availableStages.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {availableStages.map((s) => (
+                      <button key={s.key} className="btn-outline btn-sm" disabled={busy} onClick={() => saveProgress(s.key)}>
+                        Set: {s.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <button className="btn-success w-full" disabled={busy} onClick={() => saveProgress('resolved')}>
+                  <i className="fas fa-check-circle" /> Mark Resolved
+                </button>
               </div>
-              <div>
-                <label className="input-label">Work Notes</label>
-                <textarea className="input-field resize-none" rows={3} value={workDescription} onChange={(e) => setWorkDescription(e.target.value)} placeholder="Describe work done…" />
+            ) : (
+              <div className="mt-2 rounded-[10px] border border-line bg-gray-50 px-3.5 py-3 text-[0.75rem] font-semibold leading-relaxed text-muted">
+                <i className="fas fa-lock mr-1 text-gray-400" />
+                {detail.status === 'Pending'
+                  ? 'This report is still awaiting barangay verification and cannot be worked on yet.'
+                  : `This report is already ${detail.status.toLowerCase()} and no longer needs a repair update.`}
               </div>
-              <div className="flex flex-wrap gap-2">
-                {STAGES.filter((s) => s.key !== 'resolved').map((s, idx) => (
-                  <button key={s.key} className="btn-outline btn-sm" disabled={busy} onClick={() => saveProgress(s.key)}>
-                    Set: {s.label}
-                  </button>
-                ))}
-              </div>
-              <button className="btn-success w-full" disabled={busy} onClick={() => saveProgress('resolved')}>
-                <i className="fas fa-check-circle" /> Mark Resolved
-              </button>
-            </div>
+            )}
           </ReportDetail>
         )}
       </BottomSheet>

@@ -39,10 +39,17 @@ export default function EngineerDashboard({ reports, onOpen }) {
   }, [reports, sev, cat, status, sort])
 
   const actionCount = useMemo(
-    () => reports.filter((r) => ['critical', 'high'].includes(computeSeverity(r)) && r.status !== 'Resolved').length,
+    () =>
+      reports.filter(
+        (r) =>
+          ['Verified', 'In Progress'].includes(r.status) &&
+          ['critical', 'high'].includes(computeSeverity(r))
+      ).length,
     [reports]
   )
-  const assigned = reports.filter((r) => r.assignedTeam && r.status !== 'Resolved').length
+  const assigned = reports.filter(
+    (r) => r.assignedTeam && ['Verified', 'In Progress'].includes(r.status)
+  ).length
   const resolved = reports.filter((r) => r.status === 'Resolved').length
 
   return (
