@@ -57,17 +57,9 @@ export async function signUpWithEmail({ name, email, password, role = 'citizen',
     }
   })
   if (error) throw error
-  if (data.user) {
-    await upsertProfile({
-      id: data.user.id,
-      name,
-      email,
-      role,
-      status: 'active',
-      passwordChanged: true,
-      ...rest
-    })
-  }
+  // The profile row is created by the `handle_new_user` trigger from the
+  // metadata above, so this works even when email confirmation is required
+  // and no session exists yet.
   return data
 }
 

@@ -37,12 +37,11 @@ export default function Register() {
 
     setBusy(true)
     try {
-      const { data, error: err } = await signUpWithEmail({
+      const data = await signUpWithEmail({
         name: name.trim(),
         email: email.trim().toLowerCase(),
         password
       })
-      if (err) throw err
       if (data?.session) {
         navigate(homeForRole('citizen'), { replace: true })
       } else {

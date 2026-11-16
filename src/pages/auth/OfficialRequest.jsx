@@ -59,7 +59,7 @@ export default function OfficialRequest() {
 
     setBusy(true)
     try {
-      const { data, error: err } = await signUpWithEmail({
+      const data = await signUpWithEmail({
         name: name.trim(),
         email: email.trim().toLowerCase(),
         password,
@@ -70,7 +70,6 @@ export default function OfficialRequest() {
         contact,
         passwordChanged: true
       })
-      if (err) throw err
       const uid = data?.user?.id
       if (!uid) throw new Error('Account created, but could not attach documents. Contact the administrator.')
 

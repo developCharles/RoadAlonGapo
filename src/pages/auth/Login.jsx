@@ -27,7 +27,9 @@ export function useBusy() {
 }
 
 export function routeForProfile(profile) {
-  if (!profile) return '/login'
+  if (!profile) {
+    return { error: 'We could not load your profile. Contact the IT Administrator.' }
+  }
   if (profile.role === 'pending') return { error: 'Your official access request is still under review.' }
   if (profile.role === 'rejected') return { error: 'Your access request was not approved. Contact the IT Administrator.' }
   if (profile.status === 'inactive') return { error: 'Your account has been deactivated. Contact the administrator.' }
@@ -73,8 +75,8 @@ export default function Login() {
     }
     setBusy(true)
     try {
-      const { data, error: err } = await signInWithEmail(email.trim().toLowerCase(), password)
-      if (err) throw err
+      const data = await signInWithEmail(email.trim().toLowerCase(), password)
+      if (!data?.user) throw new Error('Sign-in failed. Please try again.')
       await finish(data.user)
     } catch (err) {
       const code = err.code || ''
