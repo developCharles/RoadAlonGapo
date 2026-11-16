@@ -11,7 +11,7 @@ export default function BottomSheet({ open, onClose, title, children, footer }) 
         </div>
         <div className="sheet-title">{title}</div>
         <div className="sheet-scroll">{children}</div>
-        {footer && <div className="flex gap-2.5 border-t border-line bg-card p-3.5">{footer}</div>}
+        {footer && <div className="sheet-footer">{footer}</div>}
       </div>
     </>
   )

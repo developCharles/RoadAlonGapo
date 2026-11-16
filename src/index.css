@@ -181,10 +181,10 @@
 
   /* ── Bottom sheet ── */
   .sheet-overlay {
-    @apply fixed inset-0 z-[3400] bg-black/45 transition-opacity;
+    @apply fixed inset-0 z-[4100] bg-black/45 transition-opacity;
   }
   .sheet {
-    @apply fixed bottom-0 left-0 right-0 z-[3500] flex h-[86vh] flex-col overflow-hidden rounded-t-[22px] bg-card shadow-pop;
+    @apply fixed bottom-0 left-0 right-0 z-[4200] flex h-[86vh] flex-col overflow-hidden rounded-t-[22px] bg-card shadow-pop;
     transform: translateY(100%);
     transition: transform 0.42s cubic-bezier(0.33, 1, 0.68, 1);
   }
@@ -203,6 +203,10 @@
   .sheet-scroll {
     @apply flex-1 overflow-y-auto px-[15px] py-4;
     overscroll-behavior: contain;
+  }
+  .sheet-footer {
+    @apply flex flex-shrink-0 gap-2.5 border-t border-line bg-card p-3.5;
+    padding-bottom: calc(0.875rem + env(safe-area-inset-bottom));
   }
 
   /* ── Toast ── */
