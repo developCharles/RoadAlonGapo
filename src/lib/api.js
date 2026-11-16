@@ -9,7 +9,12 @@ import {
   saveDemoMessages,
   getDemoRequests,
   saveDemoRequests,
-  DEMO_PROFILES
+  getDemoProfiles,
+  saveDemoProfiles,
+  getDemoLogs,
+  saveDemoLogs,
+  getDemoBackups,
+  saveDemoBackups
 } from './demo'
 
 const newId = () =>
@@ -124,7 +129,18 @@ export async function upsertProfile(profile) {
 }
 
 export async function updateProfile(userId, patch) {
-  if (demoEnabled()) return { ...getDemoProfile(), ...patch }
+  if (demoEnabled()) {
+    const rows = getDemoProfiles()
+    const existing = rows.find((p) => p.id === userId)
+    if (!existing) {
+      const created = { id: userId, role: 'citizen', status: 'active', ...patch }
+      saveDemoProfiles([created, ...rows])
+      return created
+    }
+    const next = rows.map((p) => (p.id === userId ? { ...p, ...patch } : p))
+    saveDemoProfiles(next)
+    return next.find((p) => p.id === userId)
+  }
   assertConfigured()
   const { data, error } = await supabase
     .from('profiles')
@@ -137,7 +153,7 @@ export async function updateProfile(userId, patch) {
 }
 
 export async function fetchProfiles() {
-  if (demoEnabled()) return Object.values(DEMO_PROFILES)
+  if (demoEnabled()) return getDemoProfiles()
   assertConfigured()
   const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
   if (error) throw error
@@ -377,11 +393,17 @@ export async function insertOfficialRequest(request) {
   return data ? toCamel(data) : null
 }
 
-export async function reviewOfficialRequest(id, decision, reviewerId) {
+export async function reviewOfficialRequest(id, decision, reviewerId, notes = null) {
   if (demoEnabled()) {
     const rows = getDemoRequests().map((r) =>
       r.id === id
-        ? { ...r, status: decision, reviewedAt: new Date().toISOString(), reviewedBy: reviewerId }
+        ? {
+            ...r,
+            status: decision,
+            notes: notes ?? r.notes,
+            reviewedAt: new Date().toISOString(),
+            reviewedBy: reviewerId
+          }
         : r
     )
     saveDemoRequests(rows)
@@ -390,7 +412,12 @@ export async function reviewOfficialRequest(id, decision, reviewerId) {
   assertConfigured()
   const { data, error } = await supabase
     .from('official_requests')
-    .update({ status: decision, reviewed_at: new Date().toISOString(), reviewed_by: reviewerId })
+    .update({
+      status: decision,
+      notes,
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: reviewerId
+    })
     .eq('id', id)
     .select()
     .maybeSingle()
@@ -412,14 +439,24 @@ export async function uploadFile(bucket, path, file) {
 // ── System logs / backups ────────────────────────────────────────────────────
 
 export async function writeLog(level, message, meta = null) {
-  if (demoEnabled()) return
+  if (demoEnabled()) {
+    const row = {
+      id: `log-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+      level,
+      message,
+      meta,
+      createdAt: new Date().toISOString()
+    }
+    saveDemoLogs([row, ...getDemoLogs()])
+    return
+  }
   if (!supabase) return
   const { error } = await supabase.from('system_logs').insert({ level, message, meta })
   if (error) console.warn('[log]', error.message)
 }
 
 export async function fetchLogs() {
-  if (demoEnabled()) return []
+  if (demoEnabled()) return getDemoLogs()
   assertConfigured()
   const { data, error } = await supabase
     .from('system_logs')
@@ -431,21 +468,32 @@ export async function fetchLogs() {
 }
 
 export async function clearLogs() {
-  if (demoEnabled()) return
+  if (demoEnabled()) {
+    saveDemoLogs([])
+    return
+  }
   assertConfigured()
   const { error } = await supabase.from('system_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000')
   if (error) throw error
 }
 
 export async function saveBackup(snapshot) {
-  if (demoEnabled()) return
+  if (demoEnabled()) {
+    const row = {
+      id: `backup-${Date.now()}`,
+      snapshot,
+      createdAt: new Date().toISOString()
+    }
+    saveDemoBackups([row, ...getDemoBackups()])
+    return row
+  }
   assertConfigured()
   const { error } = await supabase.from('backups').insert({ created_at: new Date().toISOString(), snapshot })
   if (error) throw error
 }
 
 export async function fetchBackups() {
-  if (demoEnabled()) return []
+  if (demoEnabled()) return getDemoBackups()
   assertConfigured()
   const { data, error } = await supabase.from('backups').select('*').order('created_at', { ascending: false }).limit(50)
   if (error) throw error

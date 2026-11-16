@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import AuthLayout from '../components/AuthLayout'
 import { useAuth } from '../context/AuthContext'
 import { homeForRole } from '../lib/constants'
+import { resetDemoData } from '../lib/demo'
 
 const ROLE_CARDS = [
   {
@@ -29,7 +30,7 @@ const ROLE_CARDS = [
     role: 'admin',
     icon: 'fa-user-shield',
     title: 'Administrator',
-    sub: 'Preview the admin shell and future management tools.',
+    sub: 'Review official requests, manage accounts, inspect backups and logs.',
     tone: 'bg-danger-bg text-danger'
   }
 ]
@@ -44,9 +45,7 @@ export default function DemoLanding() {
   }
 
   const resetData = () => {
-    ;['ra_demo_reports_v2', 'ra_demo_messages_v2', 'ra_demo_requests_v2'].forEach((key) =>
-      localStorage.removeItem(key)
-    )
+    resetDemoData()
   }
 
   return (

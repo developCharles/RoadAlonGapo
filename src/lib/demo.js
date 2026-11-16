@@ -6,7 +6,18 @@ import { isSupabaseConfigured } from './supabase'
 const REPORTS_KEY = 'ra_demo_reports_v2'
 const MESSAGES_KEY = 'ra_demo_messages_v2'
 const REQUESTS_KEY = 'ra_demo_requests_v2'
+const PROFILES_KEY = 'ra_demo_profiles_v2'
+const LOGS_KEY = 'ra_demo_logs_v2'
+const BACKUPS_KEY = 'ra_demo_backups_v2'
 const ROLE_KEY = 'ra_demo_role'
+
+const DEMO_KEYS = [REPORTS_KEY, MESSAGES_KEY, REQUESTS_KEY, PROFILES_KEY, LOGS_KEY, BACKUPS_KEY]
+
+export function resetDemoData() {
+  DEMO_KEYS.forEach((key) => localStorage.removeItem(key))
+}
+
+const isoDaysAgo = (days) => new Date(Date.now() - days * 86400000).toISOString()
 
 export const DEMO_PROFILES = {
   citizen: {
@@ -16,7 +27,8 @@ export const DEMO_PROFILES = {
     role: 'citizen',
     status: 'active',
     barangay: 'East Tapinac',
-    passwordChanged: true
+    passwordChanged: true,
+    createdAt: isoDaysAgo(120)
   },
   barangay: {
     id: 'demo-barangay',
@@ -26,7 +38,8 @@ export const DEMO_PROFILES = {
     status: 'active',
     barangay: 'East Tapinac',
     position: 'Barangay Captain',
-    passwordChanged: true
+    passwordChanged: true,
+    createdAt: isoDaysAgo(210)
   },
   engineer: {
     id: 'demo-engineer',
@@ -35,7 +48,8 @@ export const DEMO_PROFILES = {
     role: 'engineer',
     status: 'active',
     position: 'City Engineer',
-    passwordChanged: true
+    passwordChanged: true,
+    createdAt: isoDaysAgo(300)
   },
   admin: {
     id: 'demo-admin',
@@ -43,7 +57,8 @@ export const DEMO_PROFILES = {
     email: 'admin@demo.local',
     role: 'admin',
     status: 'active',
-    passwordChanged: true
+    passwordChanged: true,
+    createdAt: isoDaysAgo(365)
   }
 }
 
@@ -338,4 +353,61 @@ export function getDemoRequests() {
 
 export function saveDemoRequests(requests) {
   write(REQUESTS_KEY, requests)
+}
+
+export function getDemoProfiles() {
+  return read(PROFILES_KEY, () => Object.values(DEMO_PROFILES))
+}
+
+export function saveDemoProfiles(profiles) {
+  write(PROFILES_KEY, profiles)
+}
+
+function seedLogs() {
+  return [
+    {
+      id: 'demo-log1',
+      level: 'info',
+      message: 'Daily report digest generated.',
+      meta: { reports: 8 },
+      createdAt: daysAgo(0, 2)
+    },
+    {
+      id: 'demo-log2',
+      level: 'success',
+      message: 'Report demo-r4 marked resolved by Engr. Ramon Reyes.',
+      meta: { reportId: 'demo-r4' },
+      createdAt: daysAgo(1, 5)
+    },
+    {
+      id: 'demo-log3',
+      level: 'warn',
+      message: 'Two official access requests are still awaiting review.',
+      meta: null,
+      createdAt: daysAgo(1, 1)
+    },
+    {
+      id: 'demo-log4',
+      level: 'info',
+      message: 'Supabase realtime channel connected.',
+      meta: null,
+      createdAt: daysAgo(2, 3)
+    }
+  ]
+}
+
+export function getDemoLogs() {
+  return read(LOGS_KEY, seedLogs)
+}
+
+export function saveDemoLogs(logs) {
+  write(LOGS_KEY, logs)
+}
+
+export function getDemoBackups() {
+  return read(BACKUPS_KEY, () => [])
+}
+
+export function saveDemoBackups(backups) {
+  write(BACKUPS_KEY, backups)
 }
