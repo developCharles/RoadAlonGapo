@@ -167,6 +167,53 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- Users may edit their own profile, but only admins can change role/status.
+create or replace function public.protect_profile_privileges()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is not null and not public.is_admin() then
+    new.role := old.role;
+    new.status := old.status;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_profile_privileges on public.profiles;
+create trigger protect_profile_privileges
+  before update on public.profiles
+  for each row execute function public.protect_profile_privileges();
+
+-- Atomic upvote so citizens do not need broad UPDATE rights on reports.
+create or replace function public.upvote_report(p_report_id uuid, p_voter text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  voters text[];
+begin
+  if auth.uid() is null then
+    raise exception 'not authenticated';
+  end if;
+
+  select array(select distinct unnest(coalesce(upvoted_by, '{}'::text[]) || p_voter))
+    into voters
+    from public.reports
+    where id = p_report_id;
+
+  update public.reports
+    set upvoted_by = voters,
+        upvotes = coalesce(array_length(voters, 1), 0)
+    where id = p_report_id;
+end;
+$$;
+
 -- ── RLS ─────────────────────────────────────────────────────────────────────
 
 alter table public.profiles enable row level security;
@@ -201,8 +248,8 @@ create policy "reports_insert_own" on public.reports
 
 drop policy if exists "reports_update_official" on public.reports;
 create policy "reports_update_official" on public.reports
-  for update using (auth.uid() is not null)
-  with check (auth.uid() is not null);
+  for update using (public.is_official())
+  with check (public.is_official());
 
 drop policy if exists "reports_delete_admin" on public.reports;
 create policy "reports_delete_admin" on public.reports

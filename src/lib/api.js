@@ -248,10 +248,12 @@ export async function upvoteReport(id, voterKey) {
     return updateReport(id, { upvotes: voters.length, upvotedBy: voters })
   }
   assertConfigured()
-  const report = await getReport(id)
-  if (!report) throw new Error('Report not found')
-  const voters = Array.from(new Set([...(report.upvotedBy || []), voterKey]))
-  return updateReport(id, { upvotes: voters.length, upvotedBy: voters })
+  const { error } = await supabase.rpc('upvote_report', {
+    p_report_id: id,
+    p_voter: voterKey
+  })
+  if (error) throw error
+  return getReport(id)
 }
 
 export async function addCommunityImage(id, imageUrl) {
