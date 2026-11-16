@@ -1,0 +1,2156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RoadAlongapo — System Admin</title>
+    <link rel="icon" type="image/png" href="https://img.icons8.com/color/48/000000/map-pin.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+/* ═══════════════════════════════════════
+   DESIGN TOKENS — matches user/barangay/engineer
+═══════════════════════════════════════ */
+:root {
+  --p:           #0056b3;
+  --pd:          #003d80;
+  --s:           #ff9f43;
+  --t:           #1a1a2e;
+  --bg:          #f0f2f5;
+  --card:        #fff;
+  --bd:          #e0e0e0;
+  --ok:          #2e7d32;
+  --err:         #c62828;
+  --primary:     #0056b3;
+  --primary-dark:#003d80;
+  --secondary:   #ff9f43;
+  --border:      #e0e0e0;
+  --text:        #1a1a2e;
+  --muted:       #6b7280;
+  --success:     #2e7d32;
+  --success-bg:  #e8f5e9;
+  --danger:      #c62828;
+  --danger-bg:   #fdecea;
+  --warning:     #e65100;
+  --warning-bg:  #fff3e0;
+  --info-bg:     #e3f2fd;
+  --info:        #1565c0;
+  --admin-accent:#1a2f5a;
+  --firebase:    #3ecf8e;
+  --firebase-dark:#1a9a67;
+  --firebase-bg: #e8faf3;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;}
+body{background:var(--bg);height:100vh;overflow:hidden;}
+
+/* ── App Shell ── */
+.app-screen{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+header{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;background:var(--card);border-bottom:1px solid var(--bd);z-index:4000;flex-shrink:0;}
+.hdr-btn{width:38px;height:38px;border:none;background:rgba(0,86,179,0.08);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;}
+.hdr-btn i{color:var(--p);font-size:1rem;}
+.logo{font-size:1.15rem;font-weight:800;color:var(--p);text-transform:uppercase;letter-spacing:0.6px;}
+.admin-badge{font-size:0.6rem;font-weight:800;background:var(--admin-accent);color:#fff;padding:2px 8px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase;margin-left:8px;vertical-align:middle;}
+
+/* Sidebar */
+#sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:6000;visibility:hidden;pointer-events:none;transition:background 0.35s;}
+#sidebar-overlay.open{visibility:visible;pointer-events:auto;background:rgba(0,0,0,0.5);}
+#sidebar{position:fixed;top:0;left:0;width:82%;max-width:320px;height:100%;background:var(--card);z-index:6001;transform:translateX(-100%);transition:transform 0.35s cubic-bezier(0.33,1,0.68,1);display:flex;flex-direction:column;}
+#sidebar.open{transform:translateX(0);}
+.sb-hdr{background:var(--admin-accent);padding:36px 20px 20px;flex-shrink:0;}
+.sb-logo{font-size:1.05rem;font-weight:900;color:#fff;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:2px;}
+.sb-tagline{font-size:0.74rem;color:rgba(255,255,255,0.65);font-weight:600;margin-bottom:10px;}
+.sb-role-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#fff;padding:4px 11px;border-radius:20px;font-size:0.7rem;font-weight:800;letter-spacing:0.4px;}
+.sb-name{font-size:0.78rem;color:rgba(255,255,255,0.75);font-weight:600;margin-top:6px;}
+.sb-scroll{flex:1;overflow-y:auto;padding:8px 0;}
+.sb-section-lbl{font-size:0.65rem;font-weight:800;color:#9ca3af;text-transform:uppercase;letter-spacing:0.6px;padding:14px 18px 5px;}
+.sb-item{display:flex;align-items:center;gap:13px;padding:13px 18px;cursor:pointer;transition:background 0.15s;}
+.sb-item:hover{background:#f8f9fa;}
+.sb-item:active{background:#f0f2f5;}
+.sb-item-icon{width:36px;height:36px;border-radius:10px;background:rgba(0,86,179,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sb-item-icon i{color:var(--p);font-size:0.95rem;}
+.sb-item-text{flex:1;}
+.sb-item-label{font-size:0.9rem;font-weight:700;color:var(--t);}
+.sb-item-sub{font-size:0.73rem;color:#9ca3af;margin-top:1px;}
+.sb-divider{height:1px;background:var(--bd);margin:6px 18px;}
+.sb-logout{padding:16px 18px;display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--err);font-weight:700;font-size:0.88rem;border-top:1px solid var(--bd);}
+.sb-logout i{font-size:1rem;}
+
+/* Firebase status strip in sidebar */
+.sb-status-strip{background:var(--firebase-bg);border:1px solid #a8e8d0;border-radius:10px;margin:10px 16px;padding:10px 13px;display:flex;align-items:center;gap:10px;}
+.sb-status-dot{width:8px;height:8px;border-radius:50%;background:#aaa;flex-shrink:0;}
+.sb-status-dot.ok{background:var(--firebase);box-shadow:0 0 0 2px rgba(62,207,142,0.35);}
+.sb-status-dot.err{background:var(--danger);}
+.sb-status-text{flex:1;}
+.sb-status-title{font-size:0.75rem;font-weight:800;color:var(--t);}
+.sb-status-sub{font-size:0.65rem;color:#9ca3af;font-weight:600;}
+
+/* Admin ribbon */
+.admin-ribbon{background:var(--admin-accent);color:white;padding:7px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.admin-ribbon-left{display:flex;align-items:center;gap:8px;}
+.admin-ribbon-left i{color:rgba(255,255,255,0.6);font-size:0.85rem;}
+.admin-ribbon-label{font-size:0.62rem;font-weight:800;letter-spacing:0.6px;text-transform:uppercase;color:rgba(255,255,255,0.65);}
+.admin-ribbon-name{font-size:0.78rem;font-weight:700;color:white;}
+.sb-conn-pill{display:flex;align-items:center;gap:5px;background:rgba(62,207,142,0.18);border:1px solid rgba(62,207,142,0.35);padding:3px 10px;border-radius:20px;}
+.sb-conn-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--firebase);}
+.sb-conn-pill span{font-size:0.6rem;font-weight:800;letter-spacing:0.4px;color:var(--firebase);text-transform:uppercase;}
+
+/* Content area */
+.content-area{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
+.view{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;}
+.view.active{display:flex;}
+.scrollable{flex:1;overflow-y:auto;padding:20px 16px 30px;}
+
+/* Bottom nav */
+.bottom-nav{display:flex;justify-content:space-around;align-items:center;background:var(--card);border-top:1px solid var(--bd);height:72px;flex-shrink:0;z-index:4000;padding-bottom:env(safe-area-inset-bottom);}
+.nav-item{display:flex;flex-direction:column;align-items:center;text-decoration:none;color:#9ca3af;gap:4px;width:25%;cursor:pointer;padding:0 4px;}
+.nav-item i{font-size:1.15rem;}
+.nav-item span{font-size:0.62rem;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;}
+.nav-item.active{color:var(--p);}
+.nav-item.active i{background:rgba(0,86,179,0.08);padding:7px;border-radius:10px;}
+
+/* ════ SHARED COMPONENTS ════ */
+.page-title{font-size:1.6rem;font-weight:900;color:var(--text);margin-bottom:4px;}
+.page-sub{font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:20px;}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.stat-card{background:var(--card);border-radius:14px;padding:16px;box-shadow:0 1px 5px rgba(0,0,0,0.07);display:flex;flex-direction:column;gap:4px;}
+.stat-card-icon{font-size:1.1rem;color:var(--primary);margin-bottom:4px;}
+.stat-card-icon.green{color:var(--success);}
+.stat-card-icon.orange{color:var(--warning);}
+.stat-card-icon.red{color:var(--danger);}
+.stat-label{font-size:0.65rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+.stat-value{font-size:1.9rem;font-weight:900;color:var(--text);line-height:1;}
+.stat-value.green{color:var(--success);}
+.stat-value.orange{color:var(--warning);}
+.stat-value.red{color:var(--danger);}
+.stat-value.blue{color:var(--primary);}
+.section-title{font-size:0.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;}
+.section-title-btn{background:none;border:none;color:var(--primary);font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
+.card{background:var(--card);border-radius:14px;padding:16px;box-shadow:0 1px 5px rgba(0,0,0,0.07);margin-bottom:14px;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:0.68rem;font-weight:800;letter-spacing:0.3px;text-transform:uppercase;}
+.badge.green{background:var(--success-bg);color:var(--success);}
+.badge.red{background:var(--danger-bg);color:var(--danger);}
+.badge.orange{background:var(--warning-bg);color:var(--warning);}
+.badge.blue{background:var(--info-bg);color:var(--info);}
+.badge.gray{background:#f0f2f5;color:var(--muted);}
+.badge.sb{background:var(--firebase-bg);color:var(--firebase-dark);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:10px;font-weight:800;font-size:0.82rem;cursor:pointer;letter-spacing:0.3px;border:none;transition:opacity 0.15s;}
+.btn:active{opacity:0.8;}
+.btn:disabled{opacity:0.5;cursor:not-allowed;}
+.btn.primary{background:var(--primary-dark);color:white;}
+.btn.danger{background:var(--danger-bg);color:var(--danger);border:1.5px solid #f5c6c6;}
+.btn.success{background:var(--success-bg);color:var(--success);border:1.5px solid #a5d6a7;}
+.btn.outline{background:transparent;color:var(--primary);border:1.5px solid var(--primary);}
+.btn.firebase{background:var(--firebase-bg);color:var(--firebase-dark);border:1.5px solid #a8e8d0;}
+.btn.full{width:100%;}
+.btn.sm{padding:7px 12px;font-size:0.75rem;}
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
+.input-field{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;background:var(--card);font-size:0.9rem;color:var(--text);outline:none;font-family:inherit;}
+.input-field:focus{border-color:var(--primary);}
+.input-label{font-size:0.72rem;font-weight:800;color:var(--text);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px;display:block;}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.status-dot.green{background:var(--success);box-shadow:0 0 0 3px rgba(46,125,50,0.15);}
+.status-dot.red{background:var(--danger);box-shadow:0 0 0 3px rgba(198,40,40,0.15);}
+.status-dot.orange{background:var(--warning);box-shadow:0 0 0 3px rgba(230,81,0,0.15);}
+
+/* ════ OVERVIEW ════ */
+.health-card {
+    background:var(--admin-accent);color:white;border-radius:16px;padding:16px 18px;margin-bottom:16px;
+}
+.health-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.health-card-top h3{font-size:0.72rem;font-weight:800;letter-spacing:0.6px;text-transform:uppercase;opacity:0.7;}
+.health-sb-badge{background:rgba(62,207,142,0.2);border:1px solid rgba(62,207,142,0.4);border-radius:20px;padding:3px 10px;display:flex;align-items:center;gap:6px;}
+.health-sb-badge span{font-size:0.65rem;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;color:var(--firebase);}
+.health-sb-badge i{font-size:0.7rem;color:var(--firebase);}
+.health-db-item{background:rgba(255,255,255,0.08);border-radius:10px;padding:12px;}
+.health-db-item-label{font-size:0.65rem;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;opacity:0.65;margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+.health-db-status{display:flex;align-items:center;gap:6px;}
+.health-db-status .dot{width:8px;height:8px;border-radius:50%;}
+.health-db-status .dot.ok{background:#69f0ae;box-shadow:0 0 0 3px rgba(105,240,174,0.3);}
+.health-db-status .dot.err{background:#ff5252;box-shadow:0 0 0 3px rgba(255,82,82,0.3);}
+.health-db-status .dot.pending{background:#ffc107;box-shadow:0 0 0 3px rgba(255,193,7,0.3);}
+.health-db-status span{font-size:0.88rem;font-weight:800;}
+.health-db-sub{font-size:0.7rem;opacity:0.6;margin-top:3px;}
+.activity-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
+.activity-item:last-child{border-bottom:none;}
+.activity-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.activity-icon.blue{background:var(--info-bg);color:var(--info);}
+.activity-icon.green{background:var(--success-bg);color:var(--success);}
+.activity-icon.orange{background:var(--warning-bg);color:var(--warning);}
+.activity-icon.red{background:var(--danger-bg);color:var(--danger);}
+.activity-icon i{font-size:0.9rem;}
+.activity-body{flex:1;}
+.activity-body p{font-size:0.85rem;color:var(--text);font-weight:600;line-height:1.35;}
+.activity-body span{font-size:0.72rem;color:var(--muted);font-weight:600;}
+.activity-time{font-size:0.7rem;color:var(--muted);font-weight:700;flex-shrink:0;padding-top:2px;}
+
+/* ════ USERS / RBAC ════ */
+.user-search-bar{display:flex;align-items:center;gap:10px;background:var(--card);padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);margin-bottom:14px;}
+.user-search-bar input{border:none;outline:none;flex:1;font-size:0.9rem;color:var(--text);background:transparent;}
+.user-search-bar i{color:var(--muted);}
+.user-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);}
+.user-row:last-child{border-bottom:none;}
+.user-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;flex-shrink:0;}
+.user-avatar.blue{background:var(--info-bg);color:var(--info);}
+.user-avatar.green{background:var(--success-bg);color:var(--success);}
+.user-avatar.orange{background:var(--warning-bg);color:var(--warning);}
+.user-avatar.purple{background:#f3e5f5;color:#7b1fa2;}
+.user-info{flex:1;min-width:0;}
+.user-info strong{font-size:0.9rem;font-weight:800;color:var(--text);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-info span{font-size:0.75rem;color:var(--muted);}
+.user-row-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
+.role-select{padding:5px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:0.72rem;font-weight:700;color:var(--text);background:white;outline:none;cursor:pointer;}
+.toggle-btn{width:38px;height:22px;border-radius:11px;border:none;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;}
+.toggle-btn.on{background:var(--success);}
+.toggle-btn.off{background:#ccc;}
+.toggle-btn::after{content:'';position:absolute;top:3px;width:16px;height:16px;border-radius:50%;background:white;transition:left 0.2s;}
+.toggle-btn.on::after{left:19px;}
+.toggle-btn.off::after{left:3px;}
+.approval-card{background:var(--card);border-radius:12px;padding:14px;border:1.5px solid #ffe082;margin-bottom:10px;box-shadow:0 2px 8px rgba(230,81,0,0.08);}
+.approval-card-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.approval-avatar{width:38px;height:38px;border-radius:50%;background:#fff3e0;color:#e65100;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:0.85rem;flex-shrink:0;}
+.approval-name{font-size:0.9rem;font-weight:800;color:var(--text);}
+.approval-meta{font-size:0.72rem;color:var(--muted);margin-top:2px;}
+.approval-details{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;}
+.approval-field{background:#f9fafb;border-radius:8px;padding:7px 10px;}
+.approval-field label{font-size:0.6rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:2px;}
+.approval-field span{font-size:0.8rem;font-weight:700;color:var(--text);}
+.approval-actions{display:flex;gap:8px;}
+
+/* Role filter tabs */
+.role-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.role-tab{padding:5px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;border:1.5px solid var(--border);color:var(--muted);cursor:pointer;background:transparent;}
+.role-tab.active{background:var(--primary);border-color:var(--primary);color:white;}
+
+/* ════ DATABASE TAB ════ */
+.db-section-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:18px;background:var(--card);border-radius:12px;padding:5px;box-shadow:0 1px 5px rgba(0,0,0,0.07);}
+.db-section-tab{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 6px;border-radius:8px;border:none;font-size:0.72rem;font-weight:800;cursor:pointer;letter-spacing:0.3px;background:transparent;color:var(--muted);transition:all 0.2s;text-transform:uppercase;}
+.db-section-tab.active{background:var(--firebase-bg);color:var(--firebase-dark);}
+.db-section-tab i{font-size:0.85rem;}
+.db-panel{display:none;}
+.db-panel.active{display:block;}
+.collection-card{background:var(--card);border-radius:14px;padding:16px;box-shadow:0 1px 5px rgba(0,0,0,0.07);margin-bottom:12px;display:flex;align-items:center;gap:14px;}
+.collection-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.collection-icon.blue{background:var(--info-bg);color:var(--info);font-size:1.2rem;}
+.collection-icon.green{background:var(--success-bg);color:var(--success);font-size:1.2rem;}
+.collection-icon.orange{background:var(--warning-bg);color:var(--warning);font-size:1.2rem;}
+.collection-icon.purple{background:#f3e5f5;color:#7b1fa2;font-size:1.2rem;}
+.collection-icon.sb{background:var(--firebase-bg);color:var(--firebase-dark);font-size:1.2rem;}
+.collection-body{flex:1;}
+.collection-body strong{font-size:0.9rem;font-weight:800;color:var(--text);display:block;margin-bottom:2px;}
+.collection-body span{font-size:0.75rem;color:var(--muted);}
+.collection-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
+.collection-count{font-size:1.4rem;font-weight:900;color:var(--firebase-dark);}
+.collection-actions{display:flex;gap:6px;margin-top:4px;}
+.sb-conn-card{background:linear-gradient(135deg,#e8faf3 0%,#f0fff8 100%);border:1.5px solid #a8e8d0;border-radius:14px;padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:14px;}
+.sb-conn-icon{width:44px;height:44px;border-radius:12px;background:var(--firebase);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sb-conn-icon i{font-size:1.2rem;color:white;}
+.sb-conn-body{flex:1;}
+.sb-conn-body strong{font-size:0.9rem;font-weight:800;color:var(--text);display:block;margin-bottom:2px;}
+.sb-conn-body span{font-size:0.72rem;color:var(--muted);}
+.sb-conn-status{text-align:right;}
+.integrity-result{background:#f5f7fa;border-radius:10px;padding:12px 14px;margin-top:10px;display:none;}
+.integrity-result.show{display:block;}
+.integrity-item{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:0.82rem;color:var(--text);}
+.integrity-item:last-child{margin-bottom:0;}
+.integrity-item i.ok{color:var(--success);}
+.integrity-item i.warn{color:var(--warning);}
+.export-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.backup-history-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);}
+.backup-history-item:last-child{border-bottom:none;}
+.backup-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.backup-icon.sb{background:var(--firebase-bg);color:var(--firebase-dark);}
+.backup-info{flex:1;}
+.backup-info strong{font-size:0.85rem;font-weight:800;color:var(--text);display:block;}
+.backup-info span{font-size:0.72rem;color:var(--muted);}
+.backup-size{font-size:0.75rem;font-weight:700;color:var(--muted);}
+
+/* Table viewer */
+.table-viewer{background:var(--card);border-radius:14px;box-shadow:0 1px 5px rgba(0,0,0,0.07);overflow:hidden;margin-bottom:14px;}
+.table-viewer-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.table-viewer-header strong{font-size:0.85rem;font-weight:800;color:var(--text);}
+.table-scroll{overflow-x:auto;}
+.data-table{width:100%;border-collapse:collapse;min-width:500px;}
+.data-table th{font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);padding:8px 12px;text-align:left;border-bottom:2px solid var(--border);background:#fafbfc;white-space:nowrap;}
+.data-table td{font-size:0.8rem;padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tr:hover td{background:#f8f9fa;}
+.data-table .td-actions{display:flex;gap:6px;}
+.td-btn{padding:3px 10px;border-radius:6px;border:none;font-size:0.68rem;font-weight:800;cursor:pointer;letter-spacing:0.3px;}
+.td-btn.edit{background:var(--info-bg);color:var(--info);}
+.td-btn.del{background:var(--danger-bg);color:var(--danger);}
+.table-pagination{padding:10px 16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:0.75rem;color:var(--muted);font-weight:600;}
+.table-pagination button{padding:5px 12px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:0.72rem;font-weight:700;cursor:pointer;}
+.table-pagination button:disabled{opacity:0.4;cursor:not-allowed;}
+.table-loading{padding:24px;text-align:center;color:var(--muted);font-size:0.85rem;}
+
+/* ════ LOGS ════ */
+.chart-wrapper{background:var(--card);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 1px 5px rgba(0,0,0,0.07);}
+.chart-wrapper canvas{max-height:200px;}
+.log-entry{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);font-size:0.82rem;}
+.log-entry:last-child{border-bottom:none;}
+.log-level{width:56px;flex-shrink:0;text-align:center;}
+.log-level span{font-size:0.62rem;font-weight:800;padding:3px 6px;border-radius:6px;letter-spacing:0.3px;}
+.log-level span.info{background:var(--info-bg);color:var(--info);}
+.log-level span.warn{background:var(--warning-bg);color:var(--warning);}
+.log-level span.error{background:var(--danger-bg);color:var(--danger);}
+.log-level span.ok{background:var(--success-bg);color:var(--success);}
+.log-body{flex:1;}
+.log-body strong{display:block;font-weight:700;color:var(--text);line-height:1.35;}
+.log-body span{font-size:0.72rem;color:var(--muted);}
+.log-ts{font-size:0.68rem;color:var(--muted);flex-shrink:0;padding-top:2px;font-weight:600;white-space:nowrap;}
+.log-filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.log-chip{padding:5px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;border:1.5px solid var(--border);color:var(--muted);cursor:pointer;background:transparent;}
+.log-chip.active{background:var(--primary);border-color:var(--primary);color:white;}
+
+/* ════ SLIDE PANEL ════ */
+.slide-panel{position:fixed;inset:0;background:var(--bg);z-index:5000;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.33,1,0.68,1);display:flex;flex-direction:column;}
+.slide-panel.open{transform:translateX(0);}
+.slide-header{background:var(--card);padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.back-btn{background:none;border:none;font-size:1.2rem;color:var(--text);cursor:pointer;}
+.slide-header-title{font-size:1rem;font-weight:700;color:var(--text);}
+.slide-scroll{flex:1;overflow-y:auto;padding:20px 16px 100px;}
+.slide-actions{position:absolute;bottom:0;left:0;right:0;padding:14px 16px;background:var(--card);border-top:1px solid var(--border);display:flex;gap:10px;}
+.sb-notice{background:var(--firebase-bg);border-radius:10px;padding:10px 12px;margin-bottom:14px;border:1px solid #a8e8d0;display:flex;align-items:center;gap:10px;}
+.sb-notice i{color:var(--firebase-dark);font-size:0.9rem;flex-shrink:0;}
+.sb-notice p{font-size:0.75rem;color:var(--text);font-weight:600;line-height:1.4;}
+.engineer-section{background:linear-gradient(135deg,#e8faf3 0%,#f0fff8 100%);border:1.5px solid #a8e8d0;border-radius:14px;padding:16px;margin-bottom:14px;}
+.engineer-section-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.engineer-section-icon{width:38px;height:38px;border-radius:10px;background:var(--firebase);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.engineer-section-icon i{color:white;font-size:1rem;}
+.engineer-section-title{font-size:0.9rem;font-weight:800;color:var(--text);}
+.engineer-section-sub{font-size:0.72rem;color:var(--muted);}
+
+/* ════ TOAST ════ */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a2e;color:white;padding:12px 20px;border-radius:30px;font-size:0.85rem;font-weight:700;z-index:9998;opacity:0;transition:all 0.3s;pointer-events:none;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.success{background:var(--success);}
+.toast.error{background:var(--danger);}
+
+/* ════ INACTIVITY ════ */
+#inactivity-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;display:none;align-items:center;justify-content:center;padding:24px;}
+#inactivity-overlay.show{display:flex;}
+.inactivity-card{background:#fff;border-radius:20px;padding:28px 24px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4);}
+.inactivity-card i.big{font-size:2.8rem;color:var(--warning);margin-bottom:14px;display:block;}
+.inactivity-card h3{font-size:1.1rem;font-weight:800;color:var(--t);margin-bottom:8px;}
+.inactivity-card p{font-size:0.85rem;color:#6b7280;line-height:1.55;margin-bottom:10px;}
+.inactivity-countdown{font-size:2.5rem;font-weight:900;color:var(--err);margin:8px 0 18px;}
+.inactivity-stay{width:100%;padding:13px;background:var(--pd);color:#fff;border:none;border-radius:12px;font-weight:900;font-size:0.95rem;cursor:pointer;margin-bottom:10px;}
+.inactivity-logout{width:100%;padding:11px;background:transparent;color:var(--err);border:1.5px solid #f5c6c6;border-radius:12px;font-weight:800;font-size:0.9rem;cursor:pointer;}
+
+/* Modal overlay for row edit/delete */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:7000;display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal-card{background:var(--card);border-radius:16px;width:100%;max-width:380px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;}
+.modal-hdr{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-hdr strong{font-size:0.95rem;font-weight:800;color:var(--text);}
+.modal-close{background:none;border:none;font-size:1.1rem;color:var(--muted);cursor:pointer;}
+.modal-body{flex:1;overflow-y:auto;padding:16px;}
+.modal-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:10px;}
+
+/* ════ APPROVAL REVIEW MODAL ════ */
+#approval-review-modal .modal-card{max-width:440px;max-height:90vh;}
+.apv-section-lbl{font-size:0.62rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 7px;}
+.apv-section-lbl:first-child{margin-top:0;}
+.apv-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px;}
+.apv-field{background:#f9fafb;border-radius:8px;padding:8px 10px;}
+.apv-field label{font-size:0.58rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:2px;}
+.apv-field span{font-size:0.82rem;font-weight:700;color:var(--text);word-break:break-all;}
+.apv-field.full{grid-column:1/-1;}
+/* Document thumbnails */
+.apv-docs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px;}
+.apv-doc-thumb{border-radius:8px;overflow:hidden;border:1.5px solid var(--border);aspect-ratio:1;cursor:pointer;background:#f0f2f5;display:flex;align-items:center;justify-content:center;position:relative;transition:border-color 0.15s;}
+.apv-doc-thumb:hover{border-color:var(--primary);}
+.apv-doc-thumb img{width:100%;height:100%;object-fit:cover;}
+.apv-doc-thumb .apv-pdf-icon{font-size:1.8rem;color:var(--danger);}
+.apv-doc-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);color:#fff;font-size:0.55rem;font-weight:700;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.apv-no-docs{background:#f9fafb;border-radius:8px;padding:12px;text-align:center;font-size:0.78rem;color:var(--muted);font-style:italic;}
+/* Full-screen doc lightbox */
+#doc-lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9000;display:none;align-items:center;justify-content:center;flex-direction:column;padding:16px;}
+#doc-lightbox.open{display:flex;}
+#doc-lightbox img{max-width:100%;max-height:80vh;border-radius:10px;object-fit:contain;}
+#doc-lightbox .lb-close{position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:1.3rem;width:38px;height:38px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+#doc-lightbox .lb-name{color:rgba(255,255,255,0.75);font-size:0.8rem;font-weight:700;margin-top:12px;text-align:center;}
+#doc-lightbox .lb-pdf-wrap{text-align:center;color:#fff;}
+#doc-lightbox .lb-pdf-wrap i{font-size:4rem;color:#ef9a9a;margin-bottom:12px;display:block;}
+#doc-lightbox .lb-pdf-wrap p{font-size:0.88rem;opacity:0.75;margin-bottom:14px;}
+#doc-lightbox .lb-pdf-wrap a{display:inline-flex;align-items:center;gap:7px;background:var(--danger);color:#fff;padding:10px 20px;border-radius:10px;font-weight:800;font-size:0.85rem;text-decoration:none;}
+/* Approval card docs hint */
+.apv-docs-hint{display:flex;align-items:center;gap:6px;margin-top:8px;margin-bottom:2px;font-size:0.72rem;font-weight:700;color:var(--info);cursor:pointer;background:var(--info-bg);border-radius:8px;padding:6px 10px;border:1.5px solid #bbdefb;}
+.apv-docs-hint i{font-size:0.8rem;}
+    </style>
+</head>
+<body>
+
+<!-- ════════ SIDEBAR ════════ -->
+<div id="sidebar-overlay" onclick="closeSidebar()"></div>
+<div id="sidebar">
+  <div class="sb-hdr">
+    <div class="sb-logo">ROADALONGAPO</div>
+    <div class="sb-tagline">System Admin Console</div>
+    <div class="sb-role-chip"><i class="fas fa-shield-alt"></i> System Admin</div>
+    <div class="sb-name" id="sidebar-name">Loading…</div>
+  </div>
+
+  <!-- Firebase status strip -->
+  <div class="sb-status-strip">
+    <div class="sb-status-dot" id="sidebar-sb-dot"></div>
+    <div class="sb-status-text">
+      <div class="sb-status-title" id="sidebar-sb-label">Connecting to Firebase…</div>
+      <div class="sb-status-sub">PostgreSQL · wqfffszuozyqmgjxjyel</div>
+    </div>
+  </div>
+
+  <div class="sb-scroll">
+    <div class="sb-section-lbl">Navigation</div>
+    <div class="sb-item" onclick="closeSidebar();switchTab('overview')">
+      <div class="sb-item-icon"><i class="fas fa-tachometer-alt"></i></div>
+      <div class="sb-item-text">
+        <div class="sb-item-label">Overview</div>
+        <div class="sb-item-sub">System dashboard & health</div>
+      </div>
+    </div>
+    <div class="sb-item" onclick="closeSidebar();switchTab('users')">
+      <div class="sb-item-icon"><i class="fas fa-users"></i></div>
+      <div class="sb-item-text">
+        <div class="sb-item-label">User Management</div>
+        <div class="sb-item-sub">RBAC & access control</div>
+      </div>
+    </div>
+    <div class="sb-item" onclick="closeSidebar();switchTab('database')">
+      <div class="sb-item-icon"><i class="fas fa-database"></i></div>
+      <div class="sb-item-text">
+        <div class="sb-item-label">Database</div>
+        <div class="sb-item-sub">Firebase table management</div>
+      </div>
+    </div>
+    <div class="sb-item" onclick="closeSidebar();switchTab('logs')">
+      <div class="sb-item-icon"><i class="fas fa-chart-bar"></i></div>
+      <div class="sb-item-text">
+        <div class="sb-item-label">System Logs</div>
+        <div class="sb-item-sub">Activity & monitoring</div>
+      </div>
+    </div>
+    <div class="sb-divider"></div>
+    <div class="sb-section-lbl">System</div>
+    <div class="sb-item" onclick="closeSidebar();exportReport()">
+      <div class="sb-item-icon"><i class="fas fa-file-export"></i></div>
+      <div class="sb-item-text">
+        <div class="sb-item-label">Export Reports</div>
+        <div class="sb-item-sub">Download CSV / JSON</div>
+      </div>
+    </div>
+  </div>
+  <div class="sb-logout" onclick="document.getElementById('logout-btn').click()">
+    <i class="fas fa-sign-out-alt"></i>
+    <span>Sign Out</span>
+  </div>
+</div>
+
+<!-- ════════ MAIN APP ════════ -->
+<div class="app-screen" id="main-app">
+
+  <!-- HEADER -->
+  <header>
+    <button class="hdr-btn" id="open-sidebar"><i class="fas fa-bars"></i></button>
+    <div class="logo">RoadAlongapo <span class="admin-badge">Admin</span></div>
+    <button class="hdr-btn" id="logout-btn"><i class="fas fa-sign-out-alt"></i></button>
+  </header>
+
+  <!-- Admin ribbon -->
+  <div class="admin-ribbon">
+    <div class="admin-ribbon-left">
+      <i class="fas fa-shield-alt"></i>
+      <div>
+        <div class="admin-ribbon-label">System Administrator</div>
+        <div class="admin-ribbon-name" id="ribbon-name">Loading…</div>
+      </div>
+    </div>
+    <div class="sb-conn-pill" id="ribbon-sb-pill">
+      <div class="dot"></div>
+      <span id="ribbon-sb-label">Firebase</span>
+    </div>
+  </div>
+
+  <div class="content-area">
+
+    <!-- ══ OVERVIEW TAB ══ -->
+    <div class="view active" id="view-overview">
+      <div class="scrollable">
+        <div class="page-title">Overview</div>
+        <div class="page-sub">System Dashboard · Firebase</div>
+
+        <!-- DB Health -->
+        <div class="health-card">
+          <div class="health-card-top">
+            <h3>Database Health</h3>
+            <div class="health-sb-badge">
+              <i class="fas fa-leaf"></i>
+              <span id="health-sb-badge-label">Connecting…</span>
+            </div>
+          </div>
+          <div class="health-db-item">
+            <div class="health-db-item-label">
+              <i class="fas fa-leaf" style="color:var(--firebase);font-size:0.7rem;"></i> Firebase Firestore
+            </div>
+            <div class="health-db-status">
+              <div class="dot pending" id="sb-health-dot"></div>
+              <span id="sb-health-text">Connecting…</span>
+            </div>
+            <div class="health-db-sub" id="sb-health-sub">YOUR_PROJECT_ID.firebaseio.com · Firestore</div>
+          </div>
+        </div>
+
+        <!-- Stat Grid -->
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-card-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-label">Registered Users</div>
+            <div class="stat-value blue" id="ov-users">–</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon"><i class="fas fa-flag"></i></div>
+            <div class="stat-label">Total Reports</div>
+            <div class="stat-value blue" id="ov-reports">–</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon green"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-label">Resolved</div>
+            <div class="stat-value green" id="ov-resolved">–</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon orange"><i class="fas fa-hourglass-half"></i></div>
+            <div class="stat-label">Pending</div>
+            <div class="stat-value orange" id="ov-pending">–</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title"><span>Role Distribution</span></div>
+          <div id="role-dist"><p style="font-size:0.85rem;color:var(--muted);text-align:center;padding:10px 0;">Loading…</p></div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">
+            <span>Recent System Activity</span>
+            <button class="section-title-btn" onclick="switchTab('logs')">View All</button>
+          </div>
+          <div id="ov-activity-list"><p style="font-size:0.85rem;color:var(--muted);text-align:center;padding:10px 0;">Loading…</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ USERS TAB ══ -->
+    <div class="view" id="view-users">
+      <div class="scrollable">
+        <div class="page-title">User Management</div>
+        <div class="page-sub">Role-Based Access Control · Firebase</div>
+
+        <!-- Pending approvals -->
+        <div id="pending-approvals-section">
+          <div class="section-title" style="margin-bottom:10px;">
+            <span>🔔 Pending Official Access Requests</span>
+            <span id="pending-count-badge" style="background:var(--danger);color:white;font-size:0.65rem;font-weight:900;padding:2px 8px;border-radius:20px;display:none;">0</span>
+          </div>
+          <div id="pending-approvals-list">
+            <div style="font-size:0.82rem;color:var(--muted);text-align:center;padding:14px 0;">
+              <i class="fas fa-check-circle" style="color:var(--success);margin-right:6px;"></i>No pending requests.
+            </div>
+          </div>
+        </div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-card-icon"><i class="fas fa-user"></i></div>
+            <div class="stat-label">Citizens</div>
+            <div class="stat-value blue" id="rbac-citizens">–</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon orange"><i class="fas fa-hard-hat"></i></div>
+            <div class="stat-label">Officials</div>
+            <div class="stat-value orange" id="rbac-officials">–</div>
+          </div>
+        </div>
+
+        <!-- Role filter -->
+        <div class="role-tabs">
+          <button class="role-tab active" data-role="all">All</button>
+          <button class="role-tab" data-role="citizen">Citizens</button>
+          <button class="role-tab" data-role="engineer">LGU Engineers</button>
+          <button class="role-tab" data-role="barangay">Barangay</button>
+          <button class="role-tab" data-role="admin">Admin</button>
+        </div>
+
+        <div class="user-search-bar">
+          <i class="fas fa-search"></i>
+          <input type="text" id="user-search" placeholder="Search by name or email…">
+        </div>
+
+        <div class="card" style="padding:0 16px;">
+          <div id="user-list" style="padding:4px 0;"></div>
+        </div>
+
+        <button class="btn primary full" style="margin-top:14px;" id="open-add-user">
+          <i class="fas fa-user-plus"></i> Add New User
+        </button>
+
+      </div>
+    </div>
+
+    <!-- ══ DATABASE TAB ══ -->
+    <div class="view" id="view-database">
+      <div class="scrollable">
+        <div class="page-title">Database</div>
+        <div class="page-sub">Firebase Table Management</div>
+
+        <!-- Connection card -->
+        <div class="sb-conn-card">
+          <div class="sb-conn-icon"><i class="fas fa-leaf"></i></div>
+          <div class="sb-conn-body">
+            <strong>Firebase Firestore</strong>
+            <span>YOUR_PROJECT_ID.firebaseio.com</span>
+          </div>
+          <div class="sb-conn-status">
+            <div class="badge" id="sb-conn-badge" style="background:var(--warning-bg);color:var(--warning);">Connecting</div>
+          </div>
+        </div>
+
+        <!-- Sub-tabs: Tables / Backup -->
+        <div class="db-section-tabs">
+          <button class="db-section-tab active" data-dbsec="tables" id="dbsectab-tables">
+            <i class="fas fa-table"></i> Tables
+          </button>
+          <button class="db-section-tab" data-dbsec="integrity" id="dbsectab-integrity">
+            <i class="fas fa-stethoscope"></i> Integrity
+          </button>
+          <button class="db-section-tab" data-dbsec="backup" id="dbsectab-backup">
+            <i class="fas fa-archive"></i> Backup
+          </button>
+        </div>
+
+        <!-- Tables panel -->
+        <div class="db-panel active" id="db-panel-tables">
+          <div class="section-title">
+            <span>Firebase Collections</span>
+            <button class="section-title-btn" id="sb-refresh-btn"><i class="fas fa-sync-alt"></i> Refresh</button>
+          </div>
+
+          <div class="collection-card">
+            <div class="collection-icon blue"><i class="fas fa-flag"></i></div>
+            <div class="collection-body">
+              <strong>reports</strong>
+              <span>Hazard submissions with GPS, status, images</span>
+            </div>
+            <div class="collection-right">
+              <div class="collection-count" id="sb-coll-reports">–</div>
+              <div class="collection-actions">
+                <div class="badge sb" id="sb-status-reports">Fetching</div>
+                <button class="btn firebase sm" onclick="openTableViewer('reports')"><i class="fas fa-eye"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="collection-card">
+            <div class="collection-icon green"><i class="fas fa-users"></i></div>
+            <div class="collection-body">
+              <strong>users</strong>
+              <span>Registered accounts with roles and permissions</span>
+            </div>
+            <div class="collection-right">
+              <div class="collection-count" id="sb-coll-users">–</div>
+              <div class="collection-actions">
+                <div class="badge sb" id="sb-status-users">Fetching</div>
+                <button class="btn firebase sm" onclick="openTableViewer('users')"><i class="fas fa-eye"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="collection-card">
+            <div class="collection-icon orange"><i class="fas fa-history"></i></div>
+            <div class="collection-body">
+              <strong>system_logs</strong>
+              <span>Admin actions, errors, and system events</span>
+            </div>
+            <div class="collection-right">
+              <div class="collection-count" id="sb-coll-logs">–</div>
+              <div class="collection-actions">
+                <div class="badge sb" id="sb-status-logs">Fetching</div>
+                <button class="btn firebase sm" onclick="openTableViewer('system_logs')"><i class="fas fa-eye"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="collection-card">
+            <div class="collection-icon purple"><i class="fas fa-archive"></i></div>
+            <div class="collection-body">
+              <strong>backups</strong>
+              <span>Backup metadata and recovery records</span>
+            </div>
+            <div class="collection-right">
+              <div class="collection-count" id="sb-coll-backups">–</div>
+              <div class="collection-actions">
+                <div class="badge sb" id="sb-status-backups">Fetching</div>
+                <button class="btn firebase sm" onclick="openTableViewer('backups')"><i class="fas fa-eye"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="collection-card">
+            <div class="collection-icon sb"><i class="fas fa-user-cog"></i></div>
+            <div class="collection-body">
+              <strong>official_requests</strong>
+              <span>Pending barangay / official access requests</span>
+            </div>
+            <div class="collection-right">
+              <div class="collection-count" id="sb-coll-official">–</div>
+              <div class="collection-actions">
+                <div class="badge sb" id="sb-status-official">Fetching</div>
+                <button class="btn firebase sm" onclick="openTableViewer('official_requests')"><i class="fas fa-eye"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Engineer account creation -->
+          <hr class="divider">
+          <div class="section-title"><span>Engineer Account Management</span></div>
+          <div class="engineer-section">
+            <div class="engineer-section-hdr">
+              <div class="engineer-section-icon"><i class="fas fa-hard-hat"></i></div>
+              <div>
+                <div class="engineer-section-title">Create LGU Engineer Account</div>
+                <div class="engineer-section-sub">Direct Firebase provisioning — no approval needed</div>
+              </div>
+            </div>
+
+            <div style="margin-bottom:12px;">
+              <label class="input-label">Full Name <span style="color:var(--danger);">*</span></label>
+              <input type="text" class="input-field" id="eng-name" placeholder="e.g. Engr. Maria Santos">
+            </div>
+            <div style="margin-bottom:12px;">
+              <label class="input-label">Email Address <span style="color:var(--danger);">*</span></label>
+              <input type="email" class="input-field" id="eng-email" placeholder="e.g. msantos@lgu.gov.ph">
+            </div>
+            <div style="margin-bottom:12px;">
+              <label class="input-label">Temporary Password <span style="color:var(--danger);">*</span></label>
+              <input type="password" class="input-field" id="eng-password" placeholder="Min. 8 characters — user must change on first login">
+            </div>
+            <div style="margin-bottom:12px;">
+              <label class="input-label">Office / Department</label>
+              <input type="text" class="input-field" id="eng-office" placeholder="e.g. City Engineering Office">
+            </div>
+            <div style="margin-bottom:12px;">
+              <label class="input-label">Employee ID (optional)</label>
+              <input type="text" class="input-field" id="eng-empid" placeholder="e.g. CEO-2024-001">
+            </div>
+            <div id="eng-result" style="display:none;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:0.78rem;font-weight:700;line-height:1.6;"></div>
+            <button class="btn firebase full" id="create-engineer-btn">
+              <i class="fas fa-hard-hat"></i> Create Engineer Account
+            </button>
+          </div>
+        </div>
+
+        <!-- Integrity panel -->
+        <div class="db-panel" id="db-panel-integrity">
+          <div class="section-title"><span>Data Integrity Check</span></div>
+          <div class="card">
+            <p style="font-size:0.85rem;color:var(--muted);margin-bottom:14px;line-height:1.5;">Scan all Firebase records for missing fields, broken coordinates, or orphaned entries.</p>
+            <button class="btn firebase full" id="integrity-btn">
+              <i class="fas fa-stethoscope"></i> Run Integrity Check
+            </button>
+            <div class="integrity-result" id="integrity-result"></div>
+          </div>
+        </div>
+
+        <!-- Backup panel -->
+        <div class="db-panel" id="db-panel-backup">
+          <div class="section-title"><span>Export &amp; Backup</span></div>
+          <div class="card">
+            <p style="font-size:0.85rem;color:var(--muted);margin-bottom:14px;line-height:1.5;">Download a full snapshot of your Firebase data for offline backup and disaster recovery.</p>
+            <div class="export-row">
+              <button class="btn success" id="export-json-btn">
+                <i class="fas fa-file-code"></i> Export JSON
+              </button>
+              <button class="btn outline" id="export-csv-btn">
+                <i class="fas fa-file-csv"></i> Export CSV
+              </button>
+            </div>
+            <button class="btn firebase full" style="margin-top:10px;" id="save-backup-btn">
+              <i class="fas fa-leaf"></i> Save Backup to Firebase
+            </button>
+          </div>
+          <div class="section-title"><span>Backup History</span></div>
+          <div class="card" style="padding:4px 16px;">
+            <div id="backup-history-list"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ LOGS TAB ══ -->
+    <div class="view" id="view-logs">
+      <div class="scrollable">
+        <div class="page-title">System Logs</div>
+        <div class="page-sub">Monitoring &amp; Activity Tracking · Firebase</div>
+
+        <div class="chart-wrapper">
+          <div class="section-title" style="margin-bottom:12px;"><span>Report Frequency — Last 7 Days</span></div>
+          <canvas id="freq-chart"></canvas>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-card-icon"><i class="fas fa-list-alt"></i></div>
+            <div class="stat-label">Total Events</div>
+            <div class="stat-value blue" id="log-total">–</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon red"><i class="fas fa-bug"></i></div>
+            <div class="stat-label">Errors</div>
+            <div class="stat-value red" id="log-errors">0</div>
+          </div>
+        </div>
+
+        <div class="log-filter-row">
+          <button class="log-chip active" data-log-filter="all">All</button>
+          <button class="log-chip" data-log-filter="info">Info</button>
+          <button class="log-chip" data-log-filter="warn">Warning</button>
+          <button class="log-chip" data-log-filter="error">Error</button>
+          <button class="log-chip" data-log-filter="ok">Success</button>
+        </div>
+
+        <div class="card" style="padding:4px 16px;">
+          <div id="log-list"></div>
+        </div>
+
+        <button class="btn outline full" style="margin-top:14px;" id="clear-logs-btn">
+          <i class="fas fa-trash-alt"></i> Clear All Logs
+        </button>
+      </div>
+    </div>
+
+  </div><!-- end .content-area -->
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <a href="#" class="nav-item active" id="nav-overview" onclick="switchTab('overview')">
+      <i class="fas fa-tachometer-alt"></i><span>Overview</span>
+    </a>
+    <a href="#" class="nav-item" id="nav-users" onclick="switchTab('users')">
+      <i class="fas fa-users"></i><span>Users</span>
+    </a>
+    <a href="#" class="nav-item" id="nav-database" onclick="switchTab('database')">
+      <i class="fas fa-database"></i><span>Database</span>
+    </a>
+    <a href="#" class="nav-item" id="nav-logs" onclick="switchTab('logs')">
+      <i class="fas fa-chart-bar"></i><span>Logs</span>
+    </a>
+  </nav>
+
+</div><!-- end .app-screen -->
+
+
+<!-- ADD USER PANEL -->
+<div class="slide-panel" id="add-user-panel">
+  <div class="slide-header">
+    <button class="back-btn" id="close-add-user"><i class="fas fa-arrow-left"></i></button>
+    <span class="slide-header-title">Provision New Account</span>
+  </div>
+  <div class="slide-scroll">
+    <div class="sb-notice">
+      <i class="fas fa-shield-alt"></i>
+      <p>Creates a <strong>Firebase Auth account</strong> + profile row via Cloud Function. The user will be forced to set their own password on first login.</p>
+    </div>
+    <div id="add-user-srkey-warn" style="display:none;background:var(--danger-bg);border:1px solid #f5c6c6;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:0.78rem;color:var(--danger);font-weight:700;line-height:1.5;">
+      <i class="fas fa-exclamation-triangle"></i> Cloud Function not reachable. Make sure <code>provisionUser</code> is deployed in Firebase.
+    </div>
+    <div style="margin-bottom:14px;">
+      <label class="input-label">Full Name <span style="color:var(--danger);">*</span></label>
+      <input type="text" class="input-field" id="new-user-name" placeholder="e.g. Juan dela Cruz">
+    </div>
+    <div style="margin-bottom:14px;">
+      <label class="input-label">Email Address <span style="color:var(--danger);">*</span></label>
+      <input type="email" class="input-field" id="new-user-email" placeholder="e.g. juan@example.com">
+    </div>
+    <div style="margin-bottom:14px;">
+      <label class="input-label">Temporary Password <span style="color:var(--danger);">*</span></label>
+      <input type="password" class="input-field" id="new-user-password" placeholder="Min. 8 characters">
+      <p style="font-size:0.7rem;color:var(--muted);margin-top:5px;line-height:1.4;">User will be forced to change this on first login.</p>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label class="input-label">Assigned Role <span style="color:var(--danger);">*</span></label>
+      <select class="input-field" id="new-user-role">
+        <option value="citizen">Citizen / Commuter</option>
+        <option value="barangay">Barangay Official</option>
+        <option value="engineer">LGU Engineer</option>
+        <option value="admin">System Administrator</option>
+      </select>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label class="input-label">Barangay / Office</label>
+      <input type="text" class="input-field" id="new-user-org" placeholder="e.g. City Engineering Office">
+    </div>
+    <div style="margin-bottom:14px;">
+      <label class="input-label">Status</label>
+      <select class="input-field" id="new-user-status">
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </div>
+    <div id="add-user-result" style="display:none;border-radius:10px;padding:12px;margin-bottom:4px;font-size:0.8rem;font-weight:700;line-height:1.6;"></div>
+  </div>
+  <div class="slide-actions">
+    <button class="btn outline" style="flex:1;" id="cancel-add-user">Cancel</button>
+    <button class="btn firebase" style="flex:2;" id="confirm-add-user">
+      <i class="fas fa-user-plus"></i> Create Account
+    </button>
+  </div>
+</div>
+
+<!-- TABLE VIEWER PANEL -->
+<div class="slide-panel" id="table-viewer-panel">
+  <div class="slide-header">
+    <button class="back-btn" id="close-table-viewer"><i class="fas fa-arrow-left"></i></button>
+    <span class="slide-header-title" id="table-viewer-title">Table</span>
+    <button class="btn firebase sm" id="table-viewer-refresh" style="margin-left:auto;"><i class="fas fa-sync-alt"></i></button>
+  </div>
+  <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+      <i class="fas fa-search" style="color:var(--muted);font-size:0.85rem;"></i>
+      <input type="text" id="table-search" placeholder="Filter rows…" style="border:none;outline:none;flex:1;font-size:0.88rem;color:var(--text);background:transparent;">
+      <span id="table-row-count" style="font-size:0.72rem;font-weight:700;color:var(--muted);white-space:nowrap;"></span>
+    </div>
+    <div style="flex:1;overflow:auto;">
+      <div id="table-viewer-content"></div>
+    </div>
+    <div class="table-pagination" id="table-pagination" style="display:none;">
+      <button id="tbl-prev">← Prev</button>
+      <span id="tbl-page-info"></span>
+      <button id="tbl-next">Next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- DOC LIGHTBOX -->
+<div id="doc-lightbox">
+  <button class="lb-close" onclick="closeLightbox()"><i class="fas fa-times"></i></button>
+  <div id="doc-lightbox-body"></div>
+  <div class="lb-name" id="doc-lightbox-name"></div>
+</div>
+
+<!-- APPROVAL REVIEW MODAL -->
+<div class="modal-overlay" id="approval-review-modal">
+  <div class="modal-card" style="max-width:440px;max-height:90vh;">
+    <div class="modal-hdr">
+      <strong>Review Access Request</strong>
+      <button class="modal-close" onclick="closeApprovalModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="approval-review-body"></div>
+    <div class="modal-footer" id="approval-review-footer"></div>
+  </div>
+</div>
+
+<!-- ROW EDIT MODAL -->
+<div class="modal-overlay" id="row-edit-modal">
+  <div class="modal-card">
+    <div class="modal-hdr">
+      <strong id="row-edit-title">Edit Row</strong>
+      <button class="modal-close" onclick="closeRowEditModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="row-edit-body"></div>
+    <div class="modal-footer">
+      <button class="btn outline" style="flex:1;" onclick="closeRowEditModal()">Cancel</button>
+      <button class="btn firebase" style="flex:2;" id="row-save-btn"><i class="fas fa-save"></i> Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- INACTIVITY -->
+<div id="inactivity-overlay">
+  <div class="inactivity-card">
+    <i class="fas fa-clock big"></i>
+    <h3>Still there?</h3>
+    <p>You've been inactive. For security, you'll be automatically signed out in:</p>
+    <div class="inactivity-countdown" id="inactivity-countdown">60</div>
+    <button class="inactivity-stay" onclick="dismissInactivity()"><i class="fas fa-check"></i> Yes, I'm still here</button>
+    <button class="inactivity-logout" onclick="doAdminLogout()"><i class="fas fa-sign-out-alt"></i> Sign Out Now</button>
+  </div>
+</div>
+
+
+<script type="module">
+// ════════════════════════════════════════════════════════════════════════
+//  FIREBASE SDK INIT
+//  ⚠️ FILL IN YOUR FIREBASE CONFIG BELOW — get this from:
+//  Firebase Console → Project Settings → General → Your apps → SDK setup
+// ════════════════════════════════════════════════════════════════════════
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, doc as fsDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
+  addDoc as addFirestoreDoc, collection, query, where, orderBy, limit,
+  onSnapshot, serverTimestamp, writeBatch
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ⚠️ REPLACE WITH YOUR ACTUAL FIREBASE PROJECT CONFIG
+const firebaseConfig = {
+  apiKey: "AIzaSyBeKiC0JAvJhKSImok1w_txqa31KXc6XZY",
+  authDomain: "roadalongapo.firebaseapp.com",
+  databaseURL: "https://roadalongapo-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "roadalongapo",
+  storageBucket: "roadalongapo.firebasestorage.app",
+  messagingSenderId: "999341301046",
+  appId: "1:999341301046:web:4c11ab4f0953714472a797",
+  measurementId: "G-986KHQ3GX3"
+};
+
+const app = initializeApp(firebaseConfig);
+window.auth = getAuth(app);
+window.db   = getFirestore(app);
+
+window.fsDoc            = fsDoc;
+window.getDoc            = getDoc;
+window.getDocs            = getDocs;
+window.setDoc            = setDoc;
+window.updateDoc          = updateDoc;
+window.deleteDoc          = deleteDoc;
+window.addFirestoreDoc    = addFirestoreDoc;
+window.collection        = collection;
+window.query              = query;
+window.where              = where;
+window.orderBy            = orderBy;
+window.limit              = limit;
+window.onSnapshot        = onSnapshot;
+window.serverTimestamp    = serverTimestamp;
+window.writeBatch        = writeBatch;
+
+window._firebaseReady = true;
+window.dispatchEvent(new Event('firebase-ready'));
+</script>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════
+//  CONFIG
+// ════════════════════════════════════════════════════════════════════════
+// Firebase config lives in the module script above.
+
+// ════════════════════════════════════════════════════════════════════════
+//  AUTH GUARD
+// ════════════════════════════════════════════════════════════════════════
+const _adminRaw     = sessionStorage.getItem('ra_user');
+const _adminSession = _adminRaw ? (() => { try { return JSON.parse(_adminRaw); } catch(e) { return null; } })() : null;
+
+if (!_adminSession || _adminSession.role !== 'admin') {
+    sessionStorage.removeItem('ra_user');
+    window.location.href = 'login.html';
+    throw new Error('Redirecting to login.');
+}
+
+const _adminDisplayName = _adminSession.name || _adminSession.email || 'Admin';
+document.getElementById('ribbon-name').textContent = _adminDisplayName;
+const _sidebarName = document.getElementById('sidebar-name');
+if (_sidebarName) _sidebarName.textContent = _adminDisplayName;
+
+// ════════════════════════════════════════════════════════════════════════
+//  APP STATE
+// ════════════════════════════════════════════════════════════════════════
+let fbReady    = false;
+let allReports = [];
+let allUsers   = [];
+let allLogs    = [];
+let allBackups = [];
+let allPendingRequests = [];
+let logFilter  = 'all';
+let roleFilter = 'all';
+
+// Table viewer state
+let tvTable    = '';
+let tvData     = [];
+let tvFiltered = [];
+let tvPage     = 0;
+const TV_PAGE_SIZE = 20;
+let editingRow = null;
+
+// ════════════════════════════════════════════════════════════════════════
+//  FIREBASE READY / CONNECTION CHECK
+// ════════════════════════════════════════════════════════════════════════
+function initFirebase() {
+    try {
+        if (!window._firebaseReady || !window.db) {
+            window.addEventListener('firebase-ready', initFirebase, { once: true });
+            return;
+        }
+        // Confirm we can actually reach Firestore
+        window.getDocs(window.query(window.collection(window.db, 'users'), window.limit(1)))
+            .then(() => {
+                fbReady = true;
+                setSbConnected(true);
+                loadAllData();
+                // Poll every 10 seconds for fresh data as a fallback safety net
+                setInterval(loadAllData, 10000);
+                // Real-time subscription to official_requests — refreshes dashboard on any change
+                window.onSnapshot(window.collection(window.db, 'official_requests'), () => {
+                    loadAllData();
+                });
+            })
+            .catch(err => {
+                setSbConnected(false);
+                console.error('Firebase connection error:', err);
+            });
+    } catch(e) {
+        setSbConnected(false);
+        console.error('Firebase init error:', e);
+    }
+}
+
+function setSbConnected(ok) {
+    const dot  = document.getElementById('sb-health-dot');
+    const txt  = document.getElementById('sb-health-text');
+    const sub  = document.getElementById('sb-health-sub');
+    const pill = document.getElementById('ribbon-sb-pill');
+    const pillLbl = document.getElementById('ribbon-sb-label');
+    const sidebarDot = document.getElementById('sidebar-sb-dot');
+    const sidebarLbl = document.getElementById('sidebar-sb-label');
+    const badgeLbl   = document.getElementById('health-sb-badge-label');
+    const connBadge  = document.getElementById('sb-conn-badge');
+
+    if (ok) {
+        dot.className = 'dot ok';
+        txt.textContent = 'Connected';
+        sub.textContent = 'Firestore · Real-time · Live';
+        pillLbl.textContent = 'Firebase Live';
+        sidebarDot.className = 'sb-status-dot ok';
+        sidebarLbl.textContent = 'Firebase Connected';
+        badgeLbl.textContent = 'Firebase Active';
+        if (connBadge) { connBadge.textContent = 'Connected'; connBadge.className = 'badge green'; }
+    } else {
+        dot.className = 'dot err';
+        txt.textContent = 'Error';
+        sub.textContent = 'Connection failed';
+        pillLbl.textContent = 'Firebase Error';
+        sidebarDot.className = 'sb-status-dot err';
+        sidebarLbl.textContent = 'Firebase Error';
+        badgeLbl.textContent = 'Connection Error';
+        if (connBadge) { connBadge.textContent = 'Error'; connBadge.className = 'badge red'; }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  DATA LOADING
+// ════════════════════════════════════════════════════════════════════════
+function _snapToArray(snap) {
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+async function loadAllData() {
+    if (!window.db) return;
+    try {
+        const { collection: col, query: q, where, orderBy, limit, getDocs } = window;
+        const [reportsSnap, usersSnap, logsSnap, backupsSnap, requestsSnap] = await Promise.all([
+            getDocs(col(window.db, 'reports')),
+            getDocs(col(window.db, 'users')),
+            getDocs(q(col(window.db, 'system_logs'), orderBy('created_at', 'desc'), limit(200))),
+            getDocs(q(col(window.db, 'backups'), orderBy('created_at', 'desc'), limit(50))),
+            getDocs(q(col(window.db, 'official_requests'), where('status', '==', 'pending')))
+        ]);
+
+        allReports = _snapToArray(reportsSnap);
+        allUsers   = _snapToArray(usersSnap);
+        allLogs    = _snapToArray(logsSnap);
+        allBackups = _snapToArray(backupsSnap);
+        // Always overwrite allPendingRequests — even [] means no pending requests.
+        // Skipping on empty array would leave stale entries visible.
+        allPendingRequests = _snapToArray(requestsSnap);
+        console.log('[loadAllData] pending requests fetched:', allPendingRequests.map(r => ({id: r.id, name: r.name, status: r.status})));
+
+        renderOverview();
+        renderUsers();
+        renderDatabase();
+        renderLogs();
+        renderPendingApprovals();
+        buildFreqChart();
+        fetchTableCounts();
+    } catch(e) {
+        console.error('Data load error:', e);
+    }
+}
+
+async function fetchTableCounts() {
+    if (!window.db) return;
+    const tables = ['reports','users','system_logs','backups','official_requests'];
+    const idMap = { reports:'sb-coll-reports', users:'sb-coll-users', system_logs:'sb-coll-logs', backups:'sb-coll-backups', official_requests:'sb-coll-official' };
+    const stMap = { reports:'sb-status-reports', users:'sb-status-users', system_logs:'sb-status-logs', backups:'sb-status-backups', official_requests:'sb-status-official' };
+
+    for (const t of tables) {
+        try {
+            const snap = await window.getDocs(window.collection(window.db, t));
+            const count = snap.size;
+            const el = document.getElementById(idMap[t]);
+            const st = document.getElementById(stMap[t]);
+            if (el) el.textContent = count ?? 0;
+            if (st) { st.textContent = 'Active'; st.className = 'badge sb'; }
+        } catch(e) {
+            const el = document.getElementById(idMap[t]);
+            const st = document.getElementById(stMap[t]);
+            if (el) el.textContent = '–';
+            if (st) { st.textContent = 'Error'; st.className = 'badge red'; }
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  WRITE LOG
+// ════════════════════════════════════════════════════════════════════════
+async function writeLog(level, message, detail) {
+    if (!window.db || !fbReady) return;
+    const actor = _adminSession.name || _adminSession.email || 'Admin';
+    try {
+        await window.addFirestoreDoc(window.collection(window.db, 'system_logs'), {
+            level, message, detail: detail || '', actor,
+            created_at: new Date().toISOString()
+        });
+    } catch(e) {}
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════════════════════════════════
+function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type ? ' ' + type : '');
+    setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  SIDEBAR / LOGOUT
+// ════════════════════════════════════════════════════════════════════════
+document.getElementById('open-sidebar').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebar-overlay').classList.add('open');
+});
+window.closeSidebar = function() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+};
+document.getElementById('logout-btn').addEventListener('click', () => {
+    sessionStorage.removeItem('ra_user');
+    window.location.href = 'login.html';
+});
+
+// ════════════════════════════════════════════════════════════════════════
+//  INACTIVITY TIMER
+// ════════════════════════════════════════════════════════════════════════
+const INACTIVITY_MS = 59 * 60 * 1000;
+let inactivityTimer = null;
+let countdownTimer  = null;
+let countdownVal    = 60;
+
+function doAdminLogout() {
+    sessionStorage.removeItem('ra_user');
+    window.location.href = 'login.html';
+}
+function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    clearInterval(countdownTimer);
+    document.getElementById('inactivity-overlay').classList.remove('show');
+    inactivityTimer = setTimeout(showInactivityWarning, INACTIVITY_MS);
+}
+function showInactivityWarning() {
+    countdownVal = 60;
+    document.getElementById('inactivity-countdown').textContent = countdownVal;
+    document.getElementById('inactivity-overlay').classList.add('show');
+    countdownTimer = setInterval(() => {
+        countdownVal--;
+        document.getElementById('inactivity-countdown').textContent = countdownVal;
+        if (countdownVal <= 0) { clearInterval(countdownTimer); doAdminLogout(); }
+    }, 1000);
+}
+window.dismissInactivity = function() {
+    clearInterval(countdownTimer);
+    document.getElementById('inactivity-overlay').classList.remove('show');
+    resetInactivityTimer();
+};
+['click','keydown','touchstart','mousemove','scroll'].forEach(evt => {
+    document.addEventListener(evt, resetInactivityTimer, { passive: true });
+});
+document.addEventListener('DOMContentLoaded', resetInactivityTimer);
+
+// ════════════════════════════════════════════════════════════════════════
+//  TAB NAVIGATION
+// ════════════════════════════════════════════════════════════════════════
+const TABS = ['overview','users','database','logs'];
+function switchTab(tab) {
+    TABS.forEach(t => {
+        document.getElementById('view-' + t).classList.toggle('active', t === tab);
+        document.getElementById('nav-'  + t).classList.toggle('active', t === tab);
+    });
+    if (tab === 'logs' && window._chartInitialized) {
+        setTimeout(() => window._freqChart && window._freqChart.resize(), 50);
+    }
+    if (tab === 'database') fetchTableCounts();
+}
+
+// DB sub-tabs
+document.querySelectorAll('.db-section-tab').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.db-section-tab').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.db-panel').forEach(p => p.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById('db-panel-' + this.getAttribute('data-dbsec')).classList.add('active');
+    });
+});
+
+// Role tabs
+document.querySelectorAll('.role-tab').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.role-tab').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        roleFilter = this.getAttribute('data-role');
+        renderUsers();
+    });
+});
+
+// ════════════════════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════════════════════
+const roleColors = { citizen:'blue', barangay:'green', engineer:'orange', admin:'purple', unknown:'blue' };
+const roleLabels = { citizen:'Citizen', barangay:'Barangay Official', engineer:'LGU Engineer', admin:'System Admin', unknown:'Unknown' };
+
+function avatarInitials(name) {
+    if (!name) return '?';
+    const parts = name.trim().split(' ');
+    return (parts.length >= 2 ? parts[0][0] + parts[1][0] : name[0]).toUpperCase();
+}
+function timeAgo(ts) {
+    if (!ts) return 'unknown';
+    const d   = new Date(ts);
+    const sec = Math.floor((Date.now() - d.getTime()) / 1000);
+    if (sec < 60)    return `${sec}s ago`;
+    if (sec < 3600)  return `${Math.floor(sec/60)}m ago`;
+    if (sec < 86400) return `${Math.floor(sec/3600)}h ago`;
+    return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+}
+function fmtDateTime(ts) {
+    if (!ts) return '–';
+    const d = new Date(ts);
+    return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) + ' ' + d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  OVERVIEW RENDER
+// ════════════════════════════════════════════════════════════════════════
+function renderOverview() {
+    document.getElementById('ov-users').textContent    = allUsers.length;
+    document.getElementById('ov-reports').textContent  = allReports.length;
+    document.getElementById('ov-resolved').textContent = allReports.filter(r => (r.status||'').toLowerCase() === 'resolved').length;
+    document.getElementById('ov-pending').textContent  = allReports.filter(r => (r.status||'').toLowerCase() === 'pending').length;
+
+    const roles = { citizen:0, barangay:0, engineer:0, admin:0 };
+    allUsers.forEach(u => { const r = (u.role==='reporter' ? 'citizen' : u.role)||'citizen'; if (roles[r] !== undefined) roles[r]++; });
+    const roleDist = document.getElementById('role-dist');
+    roleDist.innerHTML = Object.entries(roles).map(([role, count]) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span class="badge ${roleColors[role]||'blue'}">${roleLabels[role]||role}</span>
+            <div style="flex:1;background:#f0f2f5;border-radius:8px;height:8px;overflow:hidden;">
+                <div style="background:var(--primary);height:100%;width:${allUsers.length ? Math.round(count/allUsers.length*100) : 0}%;border-radius:8px;"></div>
+            </div>
+            <span style="font-size:0.82rem;font-weight:800;color:var(--text);min-width:24px;text-align:right;">${count}</span>
+        </div>`).join('');
+
+    const recentLogs = [...allLogs].slice(0, 5);
+    const actEl = document.getElementById('ov-activity-list');
+    if (recentLogs.length === 0) {
+        actEl.innerHTML = '<p style="font-size:0.85rem;color:var(--muted);text-align:center;padding:16px 0;">No activity logged yet.</p>';
+    } else {
+        actEl.innerHTML = recentLogs.map(log => {
+            const colorMap = { info:'blue', warn:'orange', error:'red', ok:'green' };
+            const iconMap  = { info:'fa-info-circle', warn:'fa-exclamation-triangle', error:'fa-times-circle', ok:'fa-check-circle' };
+            const c  = colorMap[log.level] || 'blue';
+            const ic = iconMap[log.level]  || 'fa-info-circle';
+            return `<div class="activity-item">
+                <div class="activity-icon ${c}"><i class="fas ${ic}"></i></div>
+                <div class="activity-body">
+                    <p>${log.message || '–'}</p>
+                    <span>${log.actor || 'System'}</span>
+                </div>
+                <span class="activity-time">${timeAgo(log.created_at)}</span>
+            </div>`;
+        }).join('');
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  USERS / RBAC
+// ════════════════════════════════════════════════════════════════════════
+function renderPendingApprovals() {
+    const list  = document.getElementById('pending-approvals-list');
+    const badge = document.getElementById('pending-count-badge');
+    const count = allPendingRequests.length;
+    badge.style.display = count > 0 ? 'inline' : 'none';
+    badge.textContent   = count;
+    if (!count) {
+        list.innerHTML = `<div style="font-size:0.82rem;color:var(--muted);text-align:center;padding:14px 0;"><i class="fas fa-check-circle" style="color:var(--success);margin-right:6px;"></i>No pending requests.</div>`;
+        return;
+    }
+    list.innerHTML = allPendingRequests.map(r => {
+        const initials = (r.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        const subDate  = r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '–';
+        // Parse documents array with better error handling
+        let docs = [];
+        try { 
+            if (r.documents) {
+                if (typeof r.documents === 'string') {
+                    docs = JSON.parse(r.documents);
+                } else if (Array.isArray(r.documents)) {
+                    docs = r.documents;
+                } else {
+                    console.warn('[renderPendingApprovals] Unexpected documents format:', typeof r.documents);
+                }
+            }
+        } catch(e) { 
+            console.error('[renderPendingApprovals] Failed to parse documents:', e); 
+        }
+        
+        const docHint = docs.length > 0
+            ? `<div class="apv-docs-hint" onclick="openApprovalModal('${r.id}')">
+                 <i class="fas fa-paperclip"></i> ${docs.length} document${docs.length>1?'s':''} attached — click to review
+               </div>`
+            : `<div class="apv-docs-hint" style="color:var(--muted);background:#f9fafb;border-color:var(--border);cursor:default;">
+                 <i class="fas fa-file-slash"></i> No documents submitted
+               </div>`;
+        return `<div class="approval-card">
+          <div class="approval-card-header">
+            <div class="approval-avatar">${initials}</div>
+            <div>
+              <div class="approval-name">${r.name||'Unknown'}</div>
+              <div class="approval-meta">${r.email||'–'} · Submitted ${subDate}</div>
+            </div>
+          </div>
+          <div class="approval-details">
+            <div class="approval-field"><label>Position</label><span>${r.position||'–'}</span></div>
+            <div class="approval-field"><label>Barangay</label><span>${r.barangay||'–'}</span></div>
+            <div class="approval-field"><label>Contact</label><span>${r.contact||'–'}</span></div>
+            <div class="approval-field"><label>Requested Role</label><span>Barangay Official</span></div>
+          </div>
+          ${docHint}
+          <div class="approval-actions" style="margin-top:10px;">
+            <button class="btn outline" style="flex:1;font-size:0.78rem;" onclick="openApprovalModal('${r.id}')">
+              <i class="fas fa-eye"></i> Review
+            </button>
+            <button class="btn success" style="flex:1;font-size:0.78rem;" onclick="approveOfficial('${r.id}','${r.uid||''}','${(r.barangay||'').replace(/'/g,"\\'")}','${(r.name||'').replace(/'/g,"\\'")}','${r.email||''}')">
+              <i class="fas fa-check"></i> Approve
+            </button>
+            <button class="btn danger" style="flex:1;font-size:0.78rem;" onclick="rejectOfficial('${r.id}','${r.uid||''}','${(r.name||'').replace(/'/g,"\\'")}')">
+              <i class="fas fa-times"></i> Reject
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  APPROVAL REVIEW MODAL
+// ════════════════════════════════════════════════════════════════════════
+function openApprovalModal(requestId) {
+    const r = allPendingRequests.find(x => String(x.id) === String(requestId));
+    if (!r) { showToast('Request not found.', 'error'); return; }
+
+    let docs = [];
+    try { docs = r.documents ? (typeof r.documents === 'string' ? JSON.parse(r.documents) : r.documents) : []; } catch(e) {}
+
+    const subDate = r.submitted_at ? fmtDateTime(r.submitted_at) : '–';
+
+    // Build document grid
+    const docsHtml = docs.length === 0
+        ? `<div class="apv-no-docs"><i class="fas fa-file-slash" style="font-size:1.4rem;margin-bottom:6px;display:block;"></i>No documents were submitted with this request.</div>`
+        : `<div class="apv-docs-grid">${docs.map((doc, i) => {
+              const isPdf = doc.type === 'application/pdf';
+              return `<div class="apv-doc-thumb" onclick="openLightbox(${i}, '${String(requestId)}')">
+                ${isPdf
+                    ? `<i class="fas fa-file-pdf apv-pdf-icon"></i>`
+                    : `<img src="${doc.data}" alt="${doc.name||'Document'}">`}
+                <span class="apv-doc-label">${doc.name||('Doc ' + (i+1))}</span>
+              </div>`;
+          }).join('')}</div>`;
+
+    document.getElementById('approval-review-body').innerHTML = `
+        <div class="apv-section-lbl"><i class="fas fa-user" style="margin-right:5px;"></i>Applicant Info</div>
+        <div class="apv-detail-grid">
+          <div class="apv-field full"><label>Full Name</label><span>${r.name||'–'}</span></div>
+          <div class="apv-field full"><label>Email</label><span>${r.email||'–'}</span></div>
+          <div class="apv-field"><label>Position</label><span>${r.position||'–'}</span></div>
+          <div class="apv-field"><label>Barangay</label><span>${r.barangay||'–'}</span></div>
+          <div class="apv-field"><label>Contact</label><span>${r.contact||'–'}</span></div>
+          <div class="apv-field"><label>Submitted</label><span>${subDate}</span></div>
+        </div>
+        <div class="apv-section-lbl"><i class="fas fa-paperclip" style="margin-right:5px;"></i>Submitted Documents <span style="font-weight:600;color:var(--muted);font-size:0.7rem;text-transform:none;">(${docs.length} file${docs.length!==1?'s':''})</span></div>
+        ${docsHtml}
+        <div style="height:6px;"></div>`;
+
+    const safeId  = String(requestId);
+    const safeUid = String(r.uid||'');
+    const safeBrgy = (r.barangay||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const safeName = (r.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const safeEmail = String(r.email||'');
+
+    document.getElementById('approval-review-footer').innerHTML = `
+        <button class="btn outline" style="flex:1;" onclick="closeApprovalModal()">Close</button>
+        <button class="btn danger" style="flex:1;" onclick="closeApprovalModal();rejectOfficial('${safeId}','${safeUid}','${safeName}')">
+          <i class="fas fa-times"></i> Reject
+        </button>
+        <button class="btn success" style="flex:2;" onclick="closeApprovalModal();approveOfficial('${safeId}','${safeUid}','${safeBrgy}','${safeName}','${safeEmail}')">
+          <i class="fas fa-check"></i> Approve
+        </button>`;
+
+    // Store docs on window for lightbox access
+    window._apvDocs = docs;
+    document.getElementById('approval-review-modal').classList.add('open');
+}
+
+function closeApprovalModal() {
+    document.getElementById('approval-review-modal').classList.remove('open');
+}
+
+function openLightbox(docIndex, requestId) {
+    const docs = window._apvDocs || [];
+    const doc  = docs[docIndex];
+    if (!doc) return;
+    const isPdf = doc.type === 'application/pdf';
+    const bodyEl = document.getElementById('doc-lightbox-body');
+    const nameEl = document.getElementById('doc-lightbox-name');
+    nameEl.textContent = doc.name || ('Document ' + (docIndex + 1));
+    if (isPdf) {
+        bodyEl.innerHTML = `<div class="lb-pdf-wrap">
+            <i class="fas fa-file-pdf"></i>
+            <p>PDF preview is not available in-browser.<br>Size: ${(doc.size/1024).toFixed(1)} KB</p>
+            <a href="${doc.data}" download="${doc.name||'document.pdf'}"><i class="fas fa-download"></i> Download PDF</a>
+        </div>`;
+    } else {
+        bodyEl.innerHTML = `<img src="${doc.data}" alt="${doc.name||'Document'}">`;
+    }
+    document.getElementById('doc-lightbox').classList.add('open');
+}
+
+function closeLightbox() {
+    document.getElementById('doc-lightbox').classList.remove('open');
+    document.getElementById('doc-lightbox-body').innerHTML = '';
+}
+// Close lightbox on backdrop click
+document.getElementById('doc-lightbox').addEventListener('click', function(e) {
+    if (e.target === this) closeLightbox();
+});
+
+async function approveOfficial(requestId, uid, barangay, name, email) {
+    if (!confirm(`Approve "${name}" as Barangay official for ${barangay}?`)) return;
+    // Close the review modal if open, then proceed
+    closeApprovalModal();
+    // Optimistically remove from the list so the card disappears immediately
+    allPendingRequests = allPendingRequests.filter(x => String(x.id) !== String(requestId));
+    renderPendingApprovals();
+    showToast('Approving…');
+    try {
+        // Fetch the request to get the stored password and full details
+        const reqSnap = await window.getDoc(window.fsDoc(window.db, 'official_requests', requestId));
+        if (!reqSnap.exists()) throw new Error('Request not found.');
+        const req = reqSnap.data();
+
+        let finalUid = uid;
+
+        // New flow: no Auth account yet. Creating a Firebase Auth account for someone
+        // else from an already-signed-in admin session cannot be done client-side —
+        // createUserWithEmailAndPassword would sign the admin OUT and into the new
+        // account. This must go through a Cloud Function (see provisionFirebaseAccount
+        // below) using the Firebase Admin SDK, which can create users without
+        // affecting the caller's session.
+        if (!finalUid || finalUid === 'undefined' || finalUid === '') {
+            finalUid = await provisionFirebaseAccount({
+                name: req.name, email: req.email, password: req.password,
+                role: 'barangay', org: req.barangay, status: 'active'
+            });
+
+            // Write the full user profile row.
+            // passwordChanged: true — applicant chose their own password at registration.
+            await window.setDoc(window.fsDoc(window.db, 'users', finalUid), {
+                name:             req.name,
+                email:            req.email,
+                role:             'barangay',
+                status:           'active',
+                barangay:         req.barangay,
+                position:         req.position,
+                contact:          req.contact,
+                passwordChanged:  true
+            }, { merge: true });
+        } else {
+            // Old flow: uid already existed — just promote the role
+            await window.updateDoc(window.fsDoc(window.db, 'users', finalUid), {
+                role:             'barangay',
+                status:           'active',
+                barangay:         req.barangay,
+                position:         req.position,
+                contact:          req.contact,
+                passwordChanged:  true
+            });
+        }
+
+        console.log('[approveOfficial] updating doc — requestId:', requestId, 'finalUid:', finalUid);
+        await window.updateDoc(window.fsDoc(window.db, 'official_requests', requestId), {
+            status: 'approved', uid: finalUid
+        });
+
+        await writeLog('ok', `Official approved: ${name}`, `Barangay: ${barangay}`);
+        showToast(`✓ ${name} approved.`, 'success');
+        // All awaited writes are committed — safe to re-fetch now.
+        loadAllData();
+    } catch(e) { showToast('Error: ' + e.message, 'error'); console.error('[approveOfficial]', e); }
+}
+
+async function rejectOfficial(requestId, uid, name) {
+    if (!confirm(`Reject "${name}"'s access request?`)) return;
+    closeApprovalModal();
+    // Optimistically remove from the list so the card disappears immediately
+    allPendingRequests = allPendingRequests.filter(x => String(x.id) !== String(requestId));
+    renderPendingApprovals();
+    showToast('Rejecting…');
+    try {
+        // Update user status if uid exists
+        if (uid && uid !== 'undefined' && uid !== '') {
+            await window.updateDoc(window.fsDoc(window.db, 'users', uid), { status: 'inactive' });
+        }
+        // Update request status
+        await window.updateDoc(window.fsDoc(window.db, 'official_requests', requestId), { status: 'rejected' });
+
+        await writeLog('warn', `Official request rejected: ${name}`, uid ? `UID: ${uid}` : 'No UID');
+        showToast(`Request from "${name}" rejected.`, 'success');
+        // All awaited writes are committed — safe to re-fetch now.
+        loadAllData();
+    } catch(e) { 
+        showToast('Error: ' + e.message, 'error'); 
+        console.error('[rejectOfficial]', e);
+    }
+}
+
+function renderUsers(filterText) {
+    const citizens  = allUsers.filter(u => ['citizen','reporter'].includes(u.role||'citizen')).length;    const officials = allUsers.filter(u => ['barangay','engineer','admin'].includes(u.role||'')).length;
+    document.getElementById('rbac-citizens').textContent  = citizens;
+    document.getElementById('rbac-officials').textContent = officials;
+
+    const q = (filterText || document.getElementById('user-search').value || '').toLowerCase();
+    let filtered = allUsers;
+    if (roleFilter !== 'all') filtered = filtered.filter(u => {
+        const r = u.role || 'citizen';
+        return roleFilter === 'citizen' ? (r === 'citizen' || r === 'reporter') : r === roleFilter;
+    });
+    if (q) filtered = filtered.filter(u => (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q));
+
+    const list = document.getElementById('user-list');
+    if (filtered.length === 0) {
+        list.innerHTML = '<p style="font-size:0.85rem;color:var(--muted);text-align:center;padding:20px 0;">No users found.</p>';
+        return;
+    }
+    list.innerHTML = filtered.map(u => {
+        const color    = roleColors[u.role||'citizen'] || 'blue';
+        const initials = avatarInitials(u.name);
+        const isActive = u.status !== 'inactive';
+        return `<div class="user-row">
+            <div class="user-avatar ${color}">${initials}</div>
+            <div class="user-info">
+                <strong>${u.name || 'Unnamed'}</strong>
+                <span>${u.email || 'No email'} ${u.org ? '· ' + u.org : ''}</span>
+            </div>
+            <div class="user-row-right">
+                <select class="role-select" data-uid="${u.id}" onchange="changeRole(this)">
+                    <option value="citizen"  ${u.role==='citizen'||u.role==='reporter'  ?'selected':''}>Citizen</option>
+                    <option value="barangay" ${u.role==='barangay' ?'selected':''}>Barangay</option>
+                    <option value="engineer" ${u.role==='engineer' ?'selected':''}>Engineer</option>
+                    <option value="admin"    ${u.role==='admin'    ?'selected':''}>Admin</option>
+                </select>
+                <button class="toggle-btn ${isActive?'on':'off'}" data-uid="${u.id}" onclick="toggleUser(this)"></button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function changeRole(selectEl) {
+    const uid  = selectEl.getAttribute('data-uid');
+    const role = selectEl.value;
+    try {
+        await window.updateDoc(window.fsDoc(window.db, 'users', uid), { role });
+        await writeLog('ok', `Role updated to "${role}"`, `User ID: ${uid}`);
+        showToast('Role updated.', 'success');
+        loadAllData();
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+async function toggleUser(btn) {
+    const uid       = btn.getAttribute('data-uid');
+    const newStatus = btn.classList.contains('on') ? 'inactive' : 'active';
+    try {
+        await window.updateDoc(window.fsDoc(window.db, 'users', uid), { status: newStatus });
+        await writeLog('warn', `User ${newStatus === 'active' ? 'enabled' : 'disabled'}`, `User ID: ${uid}`);
+        showToast(`Account ${newStatus}.`, 'success');
+        loadAllData();
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+document.getElementById('user-search').addEventListener('input', e => renderUsers(e.target.value));
+document.getElementById('open-add-user').addEventListener('click', () => document.getElementById('add-user-panel').classList.add('open'));
+document.getElementById('close-add-user').addEventListener('click', () => document.getElementById('add-user-panel').classList.remove('open'));
+document.getElementById('cancel-add-user').addEventListener('click', () => document.getElementById('add-user-panel').classList.remove('open'));
+
+// ── Shared helper: provision account via Cloud Function ──────────────────
+// ⚠️ This calls a Firebase Cloud Function you need to deploy — it must use the
+// Firebase Admin SDK's admin.auth().createUser() to create the account without
+// affecting the calling admin's own session (client-side createUserWithEmailAndPassword
+// signs the caller into the NEW account, which would kick the admin out).
+// Replace the URL below with your deployed function's URL, e.g.
+// https://REGION-YOUR_PROJECT_ID.cloudfunctions.net/provisionUser
+const PROVISION_USER_FN_URL = "https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/provisionUser";
+
+async function provisionFirebaseAccount({ name, email, password, role, org, status, emp_id }) {
+    // Get the current admin's ID token so the Cloud Function can verify identity
+    const currentUser = window.auth.currentUser;
+    if (!currentUser) throw new Error('No active session. Please log in again.');
+    const idToken = await currentUser.getIdToken();
+
+    const res = await fetch(PROVISION_USER_FN_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({ name, email, password, role, org, status, emp_id })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || `Cloud Function error ${res.status}`);
+    return json.uid;
+}
+
+document.getElementById('confirm-add-user').addEventListener('click', async () => {
+    const name     = document.getElementById('new-user-name').value.trim();
+    const email    = document.getElementById('new-user-email').value.trim();
+    const password = document.getElementById('new-user-password').value;
+    const role     = document.getElementById('new-user-role').value;
+    const org      = document.getElementById('new-user-org').value.trim();
+    const status   = document.getElementById('new-user-status').value;
+    const resultEl = document.getElementById('add-user-result');
+
+    resultEl.style.display = 'none';
+
+    if (!name || !email) { showToast('Name and email are required.', 'error'); return; }
+    if (!password || password.length < 8) { showToast('Password must be at least 8 characters.', 'error'); return; }
+
+    const btn = document.getElementById('confirm-add-user');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating…';
+    try {
+        const uid = await provisionFirebaseAccount({ name, email, password, role, org, status });
+        await writeLog('ok', `Provisioned account: ${name}`, `Role: ${roleLabels[role]} · UID: ${uid}`);
+        showToast(`✓ ${name} created successfully.`, 'success');
+
+        resultEl.style.cssText = 'display:block;background:var(--success-bg);border:1px solid #a5d6a7;border-radius:10px;padding:12px;margin-bottom:4px;font-size:0.8rem;font-weight:700;line-height:1.8;color:var(--success);';
+        resultEl.innerHTML = `<i class="fas fa-check-circle"></i> Account created!<br>
+            <span style="font-weight:600;color:var(--text);">Name:</span> ${name}<br>
+            <span style="font-weight:600;color:var(--text);">Email:</span> ${email}<br>
+            <span style="font-weight:600;color:var(--text);">Role:</span> ${roleLabels[role]}<br>
+            <span style="font-weight:600;color:var(--text);">Auth UID:</span> <code style="font-size:0.72rem;">${uid}</code>`;
+
+        ['new-user-name','new-user-email','new-user-password','new-user-org'].forEach(id => document.getElementById(id).value = '');
+        loadAllData();
+    } catch(e) {
+        resultEl.style.cssText = 'display:block;background:var(--danger-bg);border:1px solid #f5c6c6;border-radius:10px;padding:12px;margin-bottom:4px;font-size:0.8rem;font-weight:700;line-height:1.6;color:var(--danger);';
+        resultEl.innerHTML = `<i class="fas fa-times-circle"></i> Failed: ${e.message || e}`;
+        showToast('Error: ' + (e.message || e), 'error');
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+});
+
+// ════════════════════════════════════════════════════════════════════════
+//  ENGINEER ACCOUNT CREATION
+// ════════════════════════════════════════════════════════════════════════
+document.getElementById('create-engineer-btn').addEventListener('click', async () => {
+    const name     = document.getElementById('eng-name').value.trim();
+    const email    = document.getElementById('eng-email').value.trim();
+    const password = document.getElementById('eng-password').value;
+    const office   = document.getElementById('eng-office').value.trim();
+    const empid    = document.getElementById('eng-empid').value.trim();
+    const resultEl = document.getElementById('eng-result');
+
+    resultEl.style.display = 'none';
+
+    if (!name || !email) { showToast('Name and email are required.', 'error'); return; }
+    if (!email.includes('@')) { showToast('Enter a valid email address.', 'error'); return; }
+    if (!password || password.length < 8) { showToast('Password must be at least 8 characters.', 'error'); return; }
+
+    const btn = document.getElementById('create-engineer-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating…';
+
+    try {
+        // Create auth user + profile row via Cloud Function
+        const uid = await provisionFirebaseAccount({
+            name,
+            email,
+            password,
+            role:   'engineer',
+            org:    office || 'City Engineering Office',
+            status: 'active'
+        });
+
+        // Also store emp_id if provided
+        if (empid) {
+            await window.updateDoc(window.fsDoc(window.db, 'users', uid), { emp_id: empid });
+        }
+
+        await writeLog('ok', `Engineer provisioned: ${name}`, `Office: ${office || 'City Engineering Office'} · UID: ${uid}`);
+        showToast(`✓ Engineer account created for ${name}.`, 'success');
+
+        resultEl.style.cssText = 'display:block;background:var(--success-bg);border:1px solid #a5d6a7;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:0.78rem;font-weight:700;line-height:1.8;color:var(--success);';
+        resultEl.innerHTML = `<i class="fas fa-check-circle"></i> Engineer account created!<br>
+            <span style="font-weight:600;color:var(--text);">Name:</span> ${name}<br>
+            <span style="font-weight:600;color:var(--text);">Email:</span> ${email}<br>
+            <span style="font-weight:600;color:var(--text);">Auth UID:</span> <code style="font-size:0.72rem;">${uid}</code>`;
+
+        ['eng-name','eng-email','eng-password','eng-office','eng-empid'].forEach(id => document.getElementById(id).value = '');
+        loadAllData();
+        fetchTableCounts();
+    } catch(e) {
+        resultEl.style.cssText = 'display:block;background:var(--danger-bg);border:1px solid #f5c6c6;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:0.78rem;font-weight:700;line-height:1.6;color:var(--danger);';
+        resultEl.innerHTML = `<i class="fas fa-times-circle"></i> Failed: ${e.message || e}`;
+        showToast('Error: ' + (e.message || 'Unknown error'), 'error');
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-hard-hat"></i> Create Engineer Account';
+});
+
+// ════════════════════════════════════════════════════════════════════════
+//  TABLE VIEWER
+// ════════════════════════════════════════════════════════════════════════
+async function openTableViewer(tableName) {
+    tvTable = tableName;
+    tvPage  = 0;
+    document.getElementById('table-viewer-title').textContent = tableName;
+    document.getElementById('table-viewer-panel').classList.add('open');
+    document.getElementById('table-search').value = '';
+    document.getElementById('table-viewer-content').innerHTML = '<div class="table-loading"><i class="fas fa-spinner fa-spin"></i> Loading rows…</div>';
+    await loadTableData();
+}
+
+async function loadTableData() {
+    try {
+        let snap;
+        try {
+            // Try ordering by created_at — works for most collections
+            snap = await window.getDocs(window.query(
+                window.collection(window.db, tvTable),
+                window.orderBy('created_at', 'desc'),
+                window.limit(500)
+            ));
+        } catch (orderErr) {
+            // Some collections (e.g. 'users') may not have created_at on every doc —
+            // fall back to an unordered fetch rather than failing outright.
+            snap = await window.getDocs(window.query(window.collection(window.db, tvTable), window.limit(500)));
+        }
+        tvData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        tvFiltered = tvData;
+        renderTable();
+    } catch(e) {
+        document.getElementById('table-viewer-content').innerHTML = `<div class="table-loading" style="color:var(--danger);">${e.message}</div>`;
+    }
+}
+
+function renderTable() {
+    const q = (document.getElementById('table-search').value || '').toLowerCase();
+    tvFiltered = q ? tvData.filter(row => JSON.stringify(row).toLowerCase().includes(q)) : tvData;
+
+    document.getElementById('table-row-count').textContent = `${tvFiltered.length} row${tvFiltered.length!==1?'s':''}`;
+
+    const start  = tvPage * TV_PAGE_SIZE;
+    const pageRows = tvFiltered.slice(start, start + TV_PAGE_SIZE);
+    const totalPages = Math.ceil(tvFiltered.length / TV_PAGE_SIZE);
+
+    if (tvFiltered.length === 0) {
+        document.getElementById('table-viewer-content').innerHTML = '<div class="table-loading">No rows found.</div>';
+        document.getElementById('table-pagination').style.display = 'none';
+        return;
+    }
+
+    // Build columns from first row
+    const cols = Object.keys(tvData[0] || {});
+    const priorityCols = ['id','name','email','role','status','message','level','created_at'];
+    const displayCols = [...priorityCols.filter(c => cols.includes(c)), ...cols.filter(c => !priorityCols.includes(c))].slice(0, 8);
+
+    const html = `
+        <table class="data-table">
+            <thead><tr>
+                ${displayCols.map(c => `<th>${c}</th>`).join('')}
+                <th>Actions</th>
+            </tr></thead>
+            <tbody>
+                ${pageRows.map(row => `<tr>
+                    ${displayCols.map(c => `<td title="${String(row[c] ?? '–').replace(/"/g,"'")}">${row[c] !== null && row[c] !== undefined ? String(row[c]).substring(0,50) : '–'}</td>`).join('')}
+                    <td><div class="td-actions">
+                        <button class="td-btn edit" onclick="openRowEdit('${tvTable}', '${row.id}')">Edit</button>
+                        <button class="td-btn del" onclick="deleteRow('${tvTable}', '${row.id}')">Del</button>
+                    </div></td>
+                </tr>`).join('')}
+            </tbody>
+        </table>`;
+
+    document.getElementById('table-viewer-content').innerHTML = html;
+
+    const pagination = document.getElementById('table-pagination');
+    if (totalPages > 1) {
+        pagination.style.display = 'flex';
+        document.getElementById('tbl-page-info').textContent = `Page ${tvPage+1} of ${totalPages}`;
+        document.getElementById('tbl-prev').disabled = tvPage === 0;
+        document.getElementById('tbl-next').disabled = tvPage >= totalPages - 1;
+    } else {
+        pagination.style.display = 'none';
+    }
+}
+
+document.getElementById('table-search').addEventListener('input', () => { tvPage = 0; renderTable(); });
+document.getElementById('tbl-prev').addEventListener('click', () => { tvPage--; renderTable(); });
+document.getElementById('tbl-next').addEventListener('click', () => { tvPage++; renderTable(); });
+document.getElementById('close-table-viewer').addEventListener('click', () => document.getElementById('table-viewer-panel').classList.remove('open'));
+document.getElementById('table-viewer-refresh').addEventListener('click', loadTableData);
+
+// Row edit
+window.openRowEdit = function(table, id) {
+    const row = tvData.find(r => String(r.id) === String(id));
+    if (!row) return;
+    editingRow = { table, id, row };
+
+    const protectedCols = ['id','created_at'];
+    const editableCols  = Object.keys(row).filter(c => !protectedCols.includes(c));
+
+    document.getElementById('row-edit-title').textContent = `Edit row in ${table}`;
+    document.getElementById('row-edit-body').innerHTML = editableCols.map(col => `
+        <div style="margin-bottom:12px;">
+            <label class="input-label">${col}</label>
+            <input type="text" class="input-field" id="edit-field-${col}" value="${(row[col] ?? '').toString().replace(/"/g,"&quot;")}">
+        </div>`).join('');
+
+    document.getElementById('row-edit-modal').classList.add('open');
+
+    document.getElementById('row-save-btn').onclick = async () => {
+        const updates = {};
+        editableCols.forEach(col => {
+            updates[col] = document.getElementById('edit-field-' + col).value;
+        });
+        try {
+            await window.updateDoc(window.fsDoc(window.db, table, id), updates);
+            await writeLog('ok', `Row updated in ${table}`, `ID: ${id}`);
+            showToast('Row updated.', 'success');
+            closeRowEditModal();
+            await loadTableData();
+        } catch(e) { showToast('Error: ' + e.message, 'error'); }
+    };
+};
+
+window.closeRowEditModal = function() {
+    document.getElementById('row-edit-modal').classList.remove('open');
+    editingRow = null;
+};
+
+window.deleteRow = async function(table, id) {
+    if (!confirm(`Delete row ${id} from ${table}? This cannot be undone.`)) return;
+    try {
+        await window.deleteDoc(window.fsDoc(window.db, table, id));
+        await writeLog('warn', `Row deleted from ${table}`, `ID: ${id}`);
+        showToast('Row deleted.', 'success');
+        await loadTableData();
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+};
+
+// ════════════════════════════════════════════════════════════════════════
+//  DATABASE RENDER
+// ════════════════════════════════════════════════════════════════════════
+function renderDatabase() {
+    renderBackupHistory();
+}
+
+document.getElementById('sb-refresh-btn').addEventListener('click', () => {
+    fetchTableCounts();
+    showToast('Table counts refreshed.');
+});
+
+// Integrity check
+document.getElementById('integrity-btn').addEventListener('click', () => {
+    const missingCoords = allReports.filter(r => !r.lat || !r.lng).length;
+    const missingStatus = allReports.filter(r => !r.status).length;
+    const missingCat    = allReports.filter(r => !r.category).length;
+    const orphanUsers   = allUsers.filter(u => !u.email).length;
+    const resultEl = document.getElementById('integrity-result');
+    resultEl.innerHTML = `
+        <div class="integrity-item"><i class="fas fa-${missingCoords>0?'exclamation-triangle warn':'check-circle ok'}"></i> ${missingCoords} report${missingCoords!==1?'s':''} missing GPS coordinates</div>
+        <div class="integrity-item"><i class="fas fa-${missingStatus>0?'exclamation-triangle warn':'check-circle ok'}"></i> ${missingStatus} report${missingStatus!==1?'s':''} missing status field</div>
+        <div class="integrity-item"><i class="fas fa-${missingCat>0?'exclamation-triangle warn':'check-circle ok'}"></i> ${missingCat} report${missingCat!==1?'s':''} missing category</div>
+        <div class="integrity-item"><i class="fas fa-${orphanUsers>0?'exclamation-triangle warn':'check-circle ok'}"></i> ${orphanUsers} user${orphanUsers!==1?'s':''} missing email address</div>
+        <div class="integrity-item" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);color:var(--success);font-weight:700;font-size:0.82rem;">
+            <i class="fas fa-check-circle" style="color:var(--success);"></i>
+            Integrity check complete — ${allReports.length} documents scanned.
+        </div>`;
+    resultEl.classList.add('show');
+    writeLog('info', 'Data integrity check run', `${allReports.length} reports, ${allUsers.length} users scanned`);
+});
+
+// JSON export
+document.getElementById('export-json-btn').addEventListener('click', () => {
+    const data = { exportedAt: new Date().toISOString(), source: 'Firebase', reports: allReports, users: allUsers };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `roadalongapo_backup_${Date.now()}.json`;
+    a.click(); URL.revokeObjectURL(url);
+    writeLog('ok', 'JSON export downloaded', `${allReports.length} reports, ${allUsers.length} users`);
+    showToast('JSON backup downloaded.', 'success');
+});
+
+// CSV export
+document.getElementById('export-csv-btn').addEventListener('click', () => {
+    const headers = ['id','category','location','status','lat','lng','created_at'];
+    const rows = allReports.map(r => headers.map(h => {
+        const v = r[h] || '';
+        return `"${String(v).replace(/"/g,'""')}"`;
+    }).join(','));
+    const csv  = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `roadalongapo_reports_${Date.now()}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    writeLog('ok', 'CSV export downloaded', `${allReports.length} report rows`);
+    showToast('CSV export downloaded.', 'success');
+});
+
+// Save backup to Firebase
+document.getElementById('save-backup-btn').addEventListener('click', async () => {
+    if (!window.db || !fbReady) { showToast('Firebase not ready.', 'error'); return; }
+    const btn = document.getElementById('save-backup-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+    try {
+        await window.addFirestoreDoc(window.collection(window.db, 'backups'), {
+            report_count: allReports.length,
+            user_count:   allUsers.length,
+            saved_by:     _adminDisplayName,
+            type:         'manual',
+            created_at:   new Date().toISOString()
+        });
+        await writeLog('ok', 'Manual backup saved to Firebase', `${allReports.length} reports, ${allUsers.length} users`);
+        showToast('Backup saved to Firebase.', 'success');
+        loadAllData();
+    } catch(e) { showToast('Firebase error: ' + e.message, 'error'); }
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-leaf"></i> Save Backup to Firebase';
+});
+
+function renderBackupHistory() {
+    const list   = document.getElementById('backup-history-list');
+    const sorted = [...allBackups].sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0));
+    if (sorted.length === 0) {
+        list.innerHTML = '<p style="font-size:0.85rem;color:var(--muted);text-align:center;padding:20px 0;">No backups yet.</p>';
+        return;
+    }
+    list.innerHTML = sorted.slice(0, 10).map(b => `
+        <div class="backup-history-item">
+            <div class="backup-icon sb"><i class="fas fa-leaf"></i></div>
+            <div class="backup-info">
+                <strong>${b.type === 'auto' ? 'Auto Backup' : 'Manual Backup'}</strong>
+                <span>${fmtDateTime(b.created_at)} · by ${b.saved_by || 'system'}</span>
+            </div>
+            <span class="backup-size">${b.report_count||0}R · ${b.user_count||0}U</span>
+        </div>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════════════════
+//  LOGS
+// ════════════════════════════════════════════════════════════════════════
+function renderLogs() {
+    const filtered = logFilter === 'all' ? allLogs : allLogs.filter(l => l.level === logFilter);
+    document.getElementById('log-total').textContent  = allLogs.length;
+    document.getElementById('log-errors').textContent = allLogs.filter(l => l.level === 'error').length;
+
+    const list = document.getElementById('log-list');
+    if (filtered.length === 0) {
+        list.innerHTML = '<p style="font-size:0.85rem;color:var(--muted);text-align:center;padding:20px 0;">No log entries found.</p>';
+        return;
+    }
+    list.innerHTML = filtered.map(l => `
+        <div class="log-entry">
+            <div class="log-level"><span class="${l.level||'info'}">${(l.level||'info').toUpperCase()}</span></div>
+            <div class="log-body">
+                <strong>${l.message || '–'}</strong>
+                <span>${l.actor || 'System'} · ${l.detail || ''}</span>
+            </div>
+            <span class="log-ts">${timeAgo(l.created_at)}</span>
+        </div>`).join('');
+}
+
+window._chartInitialized = false;
+window._freqChart = null;
+function buildFreqChart() {
+    const ctx    = document.getElementById('freq-chart').getContext('2d');
+    const days   = [];
+    const counts = [];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        days.push(d.toLocaleDateString('en-US', { weekday:'short', month:'numeric', day:'numeric' }));
+        const dayStr = d.toDateString();
+        counts.push(allReports.filter(r => {
+            if (!r.created_at) return false;
+            return new Date(r.created_at).toDateString() === dayStr;
+        }).length);
+    }
+    if (window._freqChart) window._freqChart.destroy();
+    window._freqChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: days, datasets: [{ label: 'Reports', data: counts, backgroundColor: 'rgba(0,86,179,0.7)', borderColor: '#0056b3', borderWidth: 2, borderRadius: 6 }] },
+        options: { responsive:true, maintainAspectRatio:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ stepSize:1, font:{ size:11 } }, grid:{ color:'#f0f2f5' } }, x:{ ticks:{ font:{ size:10 } }, grid:{ display:false } } } }
+    });
+    window._chartInitialized = true;
+}
+
+document.querySelectorAll('[data-log-filter]').forEach(chip => {
+    chip.addEventListener('click', function() {
+        document.querySelectorAll('[data-log-filter]').forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+        logFilter = this.getAttribute('data-log-filter');
+        renderLogs();
+    });
+});
+
+document.getElementById('clear-logs-btn').addEventListener('click', async () => {
+    if (!confirm('Clear all system logs from Firebase? This cannot be undone.')) return;
+    try {
+        // Firestore has no bulk "delete all" — fetch every doc and batch-delete.
+        // Batches are capped at 500 writes, so chunk if there are more logs than that.
+        const snap = await window.getDocs(window.collection(window.db, 'system_logs'));
+        const docs = snap.docs;
+        for (let i = 0; i < docs.length; i += 500) {
+            const batch = window.writeBatch(window.db);
+            docs.slice(i, i + 500).forEach(d => batch.delete(d.ref));
+            await batch.commit();
+        }
+        showToast('Logs cleared from Firebase.', 'success');
+        allLogs = [];
+        renderLogs();
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+});
+
+// Export report shortcut from sidebar
+window.exportReport = function() { switchTab('database'); setTimeout(()=>{ document.querySelectorAll('.db-section-tab')[2].click(); }, 100); };
+
+// ════════════════════════════════════════════════════════════════════════
+//  BOOTSTRAP
+// ════════════════════════════════════════════════════════════════════════
+initFirebase();
+</script>
+
+</body>
+</html>
