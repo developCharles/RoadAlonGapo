@@ -48,7 +48,24 @@ export default function Login() {
   const [error, setError] = useState('')
 
   const finish = async (user) => {
-    const profile = await getProfile(user.id)
+    let profile = await getProfile(user.id)
+    if (!profile) {
+      // Older accounts may predate the handle_new_user trigger. Create a
+      // minimal citizen profile so login never dead-ends on "profile not found".
+      try {
+        const { upsertProfile } = await import('../../lib/api')
+        profile = await upsertProfile({
+          id: user.id,
+          name: user.user_metadata?.name || (user.email || '').split('@')[0],
+          email: user.email,
+          role: 'citizen',
+          status: 'active',
+          passwordChanged: true
+        })
+      } catch (e) {
+        console.warn('[auth] could not create missing profile', e)
+      }
+    }
     await refreshProfile()
     const decision = routeForProfile(profile)
     if (decision.error) {
