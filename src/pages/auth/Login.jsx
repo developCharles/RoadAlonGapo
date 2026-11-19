@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import AuthLayout from '../../components/AuthLayout'
 import { useAuth } from '../../context/AuthContext'
-import { signInWithEmail, signInWithGoogle, getProfile } from '../../lib/api'
+import { signInWithEmail, getProfile } from '../../lib/api'
 import { homeForRole } from '../../lib/constants'
 
 export function MessageBox({ type, children }) {
@@ -108,17 +108,6 @@ export default function Login() {
     }
   }
 
-  const handleGoogle = async () => {
-    setError('')
-    setBusy(true)
-    try {
-      await signInWithGoogle()
-    } catch (err) {
-      setError(err.message || 'Google sign-in failed.')
-      setBusy(false)
-    }
-  }
-
   return (
     <AuthLayout>
       <div className="w-full max-w-[380px] rounded-[20px] bg-card p-[22px] shadow-[0_8px_40px_rgba(0,61,128,0.13)]">
@@ -177,18 +166,6 @@ export default function Login() {
             )}
           </button>
         </form>
-
-        <div className="my-4 flex items-center gap-2.5 text-[0.74rem] font-bold text-gray-400">
-          <div className="h-px flex-1 bg-line" /> or continue with <div className="h-px flex-1 bg-line" />
-        </div>
-
-        <button
-          className="mb-2.5 flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl border-[1.5px] border-line bg-card py-3 text-[0.88rem] font-bold text-gray-700 hover:border-primary"
-          onClick={handleGoogle}
-        >
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G" className="h-5 w-5" />
-          Sign in with Google
-        </button>
 
         <div className="mt-4 text-center text-[0.82rem] text-muted">
           New to the platform?{' '}

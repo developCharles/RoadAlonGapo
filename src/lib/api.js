@@ -68,16 +68,6 @@ export async function signUpWithEmail({ name, email, password, role = 'citizen',
   return data
 }
 
-export async function signInWithGoogle() {
-  if (demoEnabled()) throw new Error('Google sign-in is disabled in demo mode. Pick a role from the demo screen.')
-  assertConfigured()
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: window.location.origin }
-  })
-  if (error) throw error
-}
-
 export async function signOut() {
   if (demoEnabled()) return
   if (!supabase) return
